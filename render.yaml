@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: zerowaste-bites
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
+    disks:
+      - name: zerowaste-data
+        mountPath: /opt/render/project/src/data
+        sizeGB: 1

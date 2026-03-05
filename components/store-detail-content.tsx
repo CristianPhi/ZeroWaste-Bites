@@ -1,0 +1,119 @@
+"use client"
+
+import Image from "next/image"
+import Link from "next/link"
+import { ArrowLeft, Clock, MapPin, ShieldCheck, Star } from "lucide-react"
+import { stores, dealPosts, formatPrice } from "@/lib/data"
+import { DealPostCard } from "@/components/deal-post-card"
+
+export function StoreDetailContent({ storeId }: { storeId: string }) {
+  const store = stores.find((s) => s.id === storeId)
+  const storeDeals = dealPosts.filter((p) => p.store.id === storeId)
+
+  if (!store) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Store not found</p>
+      </div>
+    )
+  }
+
+  const totalSaved = storeDeals.reduce(
+    (acc, p) => acc + (p.originalPrice - p.discountedPrice) * p.claimed,
+    0
+  )
+
+  return (
+    <div className="flex flex-col pb-24">
+      {/* Header */}
+      <div className="relative bg-primary/5 px-4 pb-6 pt-4">
+        <div className="mb-3">
+          <Link href="/" aria-label="Go to Feed">
+            <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          </Link>
+          <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Store</h1>
+        </div>
+
+        <Link
+          href="/"
+          className="mb-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-border/50 transition-colors hover:bg-secondary"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="h-4 w-4 text-foreground" />
+        </Link>
+
+        <div className="flex items-center gap-4">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl ring-2 ring-primary/20">
+            <Image
+              src={store.avatar}
+              alt={store.name}
+              fill
+              className="object-cover"
+              sizes="64px"
+            />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg font-bold text-foreground">{store.name}</h1>
+              {store.verified && (
+                <ShieldCheck className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">{store.address}</p>
+            <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+                {store.rating}
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {store.distance}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                Closes {store.closingTime}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
+            <span className="text-base font-bold text-foreground">{storeDeals.length}</span>
+            <span className="mt-0.5 text-[10px] text-muted-foreground">Active deals</span>
+          </div>
+          <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
+            <span className="text-base font-bold text-foreground">
+              {storeDeals.reduce((a, p) => a + p.claimed, 0)}
+            </span>
+            <span className="mt-0.5 text-[10px] text-muted-foreground">Claimed</span>
+          </div>
+          <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
+            <span className="text-base font-bold text-primary">
+              {formatPrice(totalSaved)}
+            </span>
+            <span className="mt-0.5 text-[10px] text-muted-foreground">Saved</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Store's posts */}
+      <div className="mt-4">
+        <h2 className="px-4 text-sm font-bold text-foreground">
+          Active Deals ({storeDeals.length})
+        </h2>
+        <div className="mt-3 flex flex-col gap-2">
+          {storeDeals.map((post) => (
+            <DealPostCard key={post.id} post={post} />
+          ))}
+        </div>
+        {storeDeals.length === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            No active deals right now
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,15 @@
+{
+  "payments": [
+    {
+      "id": "pay_mmdg71pn_pu1yml",
+      "dealId": "deal-1",
+      "method": "qris",
+      "baseAmount": 6000,
+      "uniqueCode": 699,
+      "totalAmount": 6699,
+      "status": "success",
+      "createdAt": "2026-03-05T12:34:44.459Z",
+      "paidAt": "2026-03-05T12:35:00.986Z"
+    }
+  ]
+}
