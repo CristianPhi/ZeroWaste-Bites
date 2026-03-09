@@ -1,18 +1,24 @@
-Import { NextResponse } from "next/server"
-import { readJsonFile, writeJsonFile } from "@/lib/storage"
+import { NextResponse } from "next/server"
+import { MongoClient } from "mongodb"
+import nodemailer from "nodemailer"
 
-type User = { id: string; name: string; email: string; password: string; phone?: string }
+const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri!);
 
-export async function POST(req) {
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+export async function POST(req: Request) {
   try {
     const body = await req.json()
-    // Ambil phone atau email dari body
-    let phone = body.phone || body.phoneNumber; // Antisipasi kalau namanya beda
+    let phone = body.phone || body.phoneNumber; 
     const email = body.email
 
-    await client.connect();
+    if (!client.connect) await client.connect();
     const db = client.db("zerowaste_db");
     const usersCol = db.collection("users");
+    const otpsCol = db.collection("otps");
 
     // 1. Cari user di MongoDB jika inputnya email
     if (!phone && email) {
@@ -23,32 +29,4 @@ export async function POST(req) {
       phone = user.phone;
     }
 
-    if (!phone) return NextResponse.json({ error: "Phone required" }, { status: 400 });
-
-    // 2. LOGIKA AUTO-CONVERT 0 KE +62
-    phone = phone.toString().trim();
-    if (phone.startsWith("0")) {
-      phone = "+62" + phone.substring(1);
-    } else if (phone.startsWith("62") && !phone.startsWith("+62")) {
-      phone = "+" + phone;
-    }
-
-    const users = await readJsonFile<User[]>("users.json", [])
-
-    if (users.find((u) => u.email === email)) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 409 })
-    }
-
-    const id = `user_${Date.now()}`
-    const newUser: User = { id, name, email, password, phone }
-    users.push(newUser)
-    await writeJsonFile("users.json", users)
-
-    const { password: _p, ...out } = newUser
-    return NextResponse.json({ ok: true, formattedPhone: phone }) // Kirim balik phone buat debug
-
-  } catch (err) {
-    console.error("🔥 ERROR:", err);
-    return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 })
-  }
-}
+    if (!phone) return NextResponse.json({ error: "Phone required" }, { status:
