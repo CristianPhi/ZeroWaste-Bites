@@ -2,32 +2,32 @@ import { NextResponse } from "next/server"
 import { MongoClient } from "mongodb"
 
 const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+const client = new MongoClient(uri || "");
 
 export async function POST(req) {
   try {
     const body = await req.json()
-    const { name, email, password } = body
-    let phone = body.phone
+    // Beri nilai default {} agar tidak error saat destructuring
+    const { name, email, password, phone } = body || {}
 
-    // Pastikan semua field terisi
     if (!name || !email || !password || !phone) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     }
 
-    // PROTEKSI: Cek apakah phone ada isinya sebelum pakai startsWith
-    phone = phone.toString().trim();
-    if (phone && phone.startsWith("0")) {
-      phone = "+62" + phone.substring(1);
-    } else if (phone && phone.startsWith("62") && !phone.startsWith("+62")) {
-      phone = "+" + phone;
+    // Pastikan phone diubah ke string dan aman dari 'undefined'
+    const phoneStr = String(phone || "").trim();
+    let formattedPhone = phoneStr;
+
+    if (phoneStr.startsWith("0")) {
+      formattedPhone = "+62" + phoneStr.substring(1);
+    } else if (phoneStr.startsWith("62") && !phoneStr.startsWith("+62")) {
+      formattedPhone = "+" + phoneStr;
     }
 
     await client.connect();
     const db = client.db("zerowaste_db");
     const usersCol = db.collection("users");
 
-    // Cek apakah email sudah ada
     const existingUser = await usersCol.findOne({ email: email });
     if (existingUser) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 })
@@ -38,7 +38,7 @@ export async function POST(req) {
       name, 
       email, 
       password, 
-      phone 
+      phone: formattedPhone 
     }
 
     await usersCol.insertOne(newUser);
@@ -46,6 +46,9 @@ export async function POST(req) {
 
   } catch (err) {
     console.error("🔥 REGISTER ERROR:", err);
-    return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 })
+    return NextResponse.json({ error: "Server error", detail: err?.message }, { status: 500 })
   }
 }
+
+// BARIS INI WAJIB ADA BIAR GAK ERROR PAS BUILD
+export const dynamic = 'force-dynamic'
