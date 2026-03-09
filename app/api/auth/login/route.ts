@@ -7,9 +7,14 @@ export async function POST(req: Request) {
   let client;
   try {
     const uri = process.env.MONGODB_URI;
-    if (!uri) return NextResponse.json({ error: "DB URI Missing" }, { status: 500 });
+    if (!uri) return NextResponse.json({ error: "Database link (URI) hilang di Vercel" }, { status: 500 });
 
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password } = body;
+
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
+    }
 
     client = new MongoClient(uri);
     await client.connect();
