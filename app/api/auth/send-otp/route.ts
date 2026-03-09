@@ -1,4 +1,7 @@
-// ... (bagian import tetap sama)
+Import { NextResponse } from "next/server"
+import { readJsonFile, writeJsonFile } from "@/lib/storage"
+
+type User = { id: string; name: string; email: string; password: string; phone?: string }
 
 export async function POST(req) {
   try {
@@ -30,9 +33,18 @@ export async function POST(req) {
       phone = "+" + phone;
     }
 
-    // 3. Simpan OTP dan Kirim Email (Sama seperti kode sebelumnya)
-    // ... rest of your code ...
-    
+    const users = await readJsonFile<User[]>("users.json", [])
+
+    if (users.find((u) => u.email === email)) {
+      return NextResponse.json({ error: "Email already registered" }, { status: 409 })
+    }
+
+    const id = `user_${Date.now()}`
+    const newUser: User = { id, name, email, password, phone }
+    users.push(newUser)
+    await writeJsonFile("users.json", users)
+
+    const { password: _p, ...out } = newUser
     return NextResponse.json({ ok: true, formattedPhone: phone }) // Kirim balik phone buat debug
 
   } catch (err) {
