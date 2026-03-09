@@ -18,6 +18,8 @@ type UserRecord = {
 export async function POST(req: Request) {
   let client;
   try {
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+
     const body = await req.json();
     const { name, email, password, phone } = body || {};
 
@@ -26,6 +28,13 @@ export async function POST(req: Request) {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
+
+    if (!uri && isProduction) {
+      return NextResponse.json(
+        { error: "MONGODB_URI belum di-set di environment deployment." },
+        { status: 503 }
+      );
+    }
 
     // Cara aman memproses nomor tanpa startsWith di awal
     let p = String(phone).trim();
@@ -55,12 +64,17 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json({ ok: true });
-      } catch {
-        // If Mongo is unreachable, fallback to local JSON only for local development.
+      } catch (mongoErr: any) {
+        if (isProduction) {
+          return NextResponse.json(
+            { error: "Koneksi database gagal.", detail: mongoErr?.message || "Unknown Mongo error" },
+            { status: 503 }
+          );
+        }
+        // For local development only, fallback to local JSON.
       }
     }
 
-    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
     if (isProduction) {
       return NextResponse.json(
         { error: "Database belum terhubung. Cek MONGODB_URI di environment deployment." },
