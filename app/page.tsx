@@ -7,16 +7,16 @@ import { HomeContent } from "@/components/home-content"
 import { useStudent } from "@/lib/student-context"
 
 export default function HomePage() {
-  const { isVerified } = useStudent()
+  const { user } = useStudent()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isVerified) {
+    if (!user) {
       router.push("/auth/login")
     }
-  }, [isVerified, router])
+  }, [user, router])
 
-  if (!isVerified) return null
+  if (!user) return null
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl bg-background">
