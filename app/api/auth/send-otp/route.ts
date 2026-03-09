@@ -1,54 +1,76 @@
 import { NextResponse } from "next/server";
 import { MongoClient } from "mongodb";
+import nodemailer from "nodemailer";
 
-// Definisikan client di luar agar bisa digunakan kembali
-const uri = process.env.MONGODB_URI || "";
-const client = new MongoClient(uri);
+export const dynamic = "force-dynamic";
 
-export async function POST(req) {
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export async function POST(req: Request) {
   try {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      return NextResponse.json({ error: "Database configuration missing" }, { status: 500 });
+    }
+
+    // Buat client di dalam fungsi agar tidak error saat build
+    const client = new MongoClient(uri);
     const body = await req.json();
-    
-    // Gunakan destructuring dengan default value kosong agar tidak undefined
-    const { name = "", email = "", password = "", phone = "" } = body || {};
-
-    if (!name || !email || !password || !phone) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
-
-    // Pastikan phone diolah hanya di DALAM fungsi POST
-    let formattedPhone = String(phone).trim();
-    if (formattedPhone.startsWith("0")) {
-      formattedPhone = "+62" + formattedPhone.substring(1);
-    } else if (formattedPhone.startsWith("62") && !formattedPhone.startsWith("+62")) {
-      formattedPhone = "+" + formattedPhone;
-    }
+    let phone = body.phone || body.phoneNumber;
+    const email = body.email;
 
     await client.connect();
     const db = client.db("zerowaste_db");
     const usersCol = db.collection("users");
+    const otpsCol = db.collection("otps");
 
-    const existingUser = await usersCol.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    if (!phone && email) {
+      const user = await usersCol.findOne({ email });
+      if (!user || !user.phone) {
+        await client.close();
+        return NextResponse.json({ error: "No phone for this user" }, { status: 404 });
+      }
+      phone = user.phone;
     }
 
-    const newUser = {
-      id: `user_${Date.now()}`,
-      name,
-      email,
-      password,
-      phone: formattedPhone,
-    };
+    if (!phone) {
+      await client.close();
+      return NextResponse.json({ error: "Phone required" }, { status: 400 });
+    }
 
-    await usersCol.insertOne(newUser);
-    return NextResponse.json({ ok: true, message: "User registered" });
+    const code = generateCode();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
 
-  } catch (err) {
-    console.error("🔥 REGISTER ERROR:", err);
+    await otpsCol.updateOne(
+      { phone },
+      { $set: { phone, code, expiresAt } },
+      { upsert: true }
+    );
+
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_PASS;
+
+    if (email && gmailUser && gmailPass) {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailPass },
+      });
+
+      await transporter.sendMail({
+        from: `"ZeroWaste Bites" <${gmailUser}>`,
+        to: email,
+        subject: "Your Verification Code",
+        text: `Your OTP code is: ${code}`,
+      });
+    }
+
+    await client.close();
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
     return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 });
   }
 }
-
-// Tambahkan ini sebagai pengaman tambahan agar Vercel tidak render saat build
-export const dynamic = "force-dynamic";
