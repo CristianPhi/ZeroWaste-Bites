@@ -14,10 +14,6 @@ export async function POST(req: Request) {
     const client = new MongoClient(uri);
     const { phone, code } = await req.json();
 
-    if (!phone || !code) {
-      return NextResponse.json({ error: "Phone and code are required" }, { status: 400 });
-    }
-
     await client.connect();
     const db = client.db("zerowaste_db");
     const otpsCol = db.collection("otps");
