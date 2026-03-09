@@ -93,6 +93,7 @@ export async function POST(req: Request) {
     // Fallback for dev: return code in response so it can be used directly
     return NextResponse.json({ ok: true, code })
   } catch (err) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    console.error("🔥 ERROR ASLINYA:", err);
+    return NextResponse.json({ error: "Server error", detail: String(err) }, { status: 500 })
   }
 }
