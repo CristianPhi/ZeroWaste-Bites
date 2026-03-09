@@ -24,8 +24,11 @@ export default function LoginPage() {
       setLoading(false)
 
       if (data.ok) {
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user))
+        }
         alert("Login Berhasil!")
-        window.location.href = "/dashboard"
+        window.location.href = "/"
       } else {
         alert(data.error || "Email atau password salah")
       }
