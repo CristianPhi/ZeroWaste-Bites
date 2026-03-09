@@ -10,6 +10,16 @@
       "status": "success",
       "createdAt": "2026-03-05T12:34:44.459Z",
       "paidAt": "2026-03-05T12:35:00.986Z"
+    },
+    {
+      "id": "pay_mmdiyhlw_uz674d",
+      "dealId": "deal-2",
+      "method": "qris",
+      "baseAmount": 10000,
+      "uniqueCode": 698,
+      "totalAmount": 10698,
+      "status": "pending",
+      "createdAt": "2026-03-05T13:52:04.004Z"
     }
   ]
 }
