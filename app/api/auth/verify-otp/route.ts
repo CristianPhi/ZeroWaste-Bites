@@ -9,7 +9,9 @@ export async function POST(req: Request) {
     if (!uri) return NextResponse.json({ error: "DB URI Missing" }, { status: 500 });
 
     const body = await req.json();
-    const { phone, code } = body;
+    // Gunakan trim() untuk hapus spasi yang tidak sengaja terketik
+    const phone = String(body.phone || "").trim();
+    const code = String(body.code || "").trim();
 
     if (!phone || !code) {
       return NextResponse.json({ error: "Nomor HP dan kode wajib diisi" }, { status: 400 });
@@ -20,25 +22,25 @@ export async function POST(req: Request) {
     const db = client.db("zerowaste_db");
     const otpsCol = db.collection("otps");
 
-    // 1. Cari OTP berdasarkan nomor HP dan kode yang COCOK
-    // Pastikan tipe data 'code' konsisten (string)
+    // Cari OTP yang paling baru berdasarkan nomor HP dan Kode
     const otpRecord = await otpsCol.findOne({ 
-      phone: String(phone), 
-      code: String(code) 
+      phone: phone, 
+      code: code 
     });
 
     if (!otpRecord) {
       await client.close();
-      return NextResponse.json({ error: "Invalid OTP code" }, { status: 400 });
+      // Tips: Cek di MongoDB Atlas apakah phone tersimpan dengan format yang sama (+62 atau 0)
+      return NextResponse.json({ error: "Kode OTP salah atau tidak terdaftar" }, { status: 400 });
     }
 
-    // 2. Cek apakah OTP sudah kadaluarsa
+    // Cek kadaluarsa
     if (otpRecord.expiresAt < Date.now()) {
       await client.close();
-      return NextResponse.json({ error: "OTP sudah kadaluarsa" }, { status: 400 });
+      return NextResponse.json({ error: "OTP sudah kadaluarsa, silakan kirim ulang" }, { status: 400 });
     }
 
-    // 3. Jika berhasil, hapus OTP agar tidak bisa dipakai dua kali
+    // Jika sukses, hapus agar tidak bisa dipakai ulang
     await otpsCol.deleteOne({ _id: otpRecord._id });
     
     await client.close();
