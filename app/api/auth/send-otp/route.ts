@@ -29,4 +29,55 @@ export async function POST(req: Request) {
       phone = user.phone;
     }
 
-    if (!phone) return NextResponse.json({ error: "Phone required" }, { status:
+    if (!phone) return NextResponse.json({ error: "Phone required" }, { status: 404 });
+      }
+      phone = user.phone;
+    }
+
+    if (!phone) {
+      return NextResponse.json({ error: "Phone required" }, { status: 400 });
+    }
+
+    // LOGIKA AUTO-CONVERT 0 KE +62
+    phone = phone.toString().trim();
+    if (phone.startsWith("0")) {
+      phone = "+62" + phone.substring(1);
+    } else if (phone.startsWith("62") && !phone.startsWith("+62")) {
+      phone = "+" + phone;
+    }
+
+    const code = generateCode()
+    const expiresAt = Date.now() + 5 * 60 * 1000 
+
+    await otpsCol.updateOne(
+      { phone: phone },
+      { $set: { phone, code, expiresAt } },
+      { upsert: true }
+    );
+
+    const gmailUser = process.env.GMAIL_USER
+    const gmailPass = process.env.GMAIL_PASS
+    
+    if (email && gmailUser && gmailPass) {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailPass },
+      })
+
+      await transporter.sendMail({
+        from: `"ZeroWaste Bites" <${gmailUser}>`,
+        to: email,
+        subject: "Your Verification Code",
+        text: `Your OTP code is: ${code}`,
+      })
+    }
+
+    return NextResponse.json({ ok: true, formattedPhone: phone })
+
+  } catch (err: any) {
+    console.error("🔥 ERROR:", err);
+    return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 })
+  }
+}
