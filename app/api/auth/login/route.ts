@@ -1,26 +1,43 @@
-import { NextResponse } from "next/server"
-import { readJsonFile } from "@/lib/storage"
+import { NextResponse } from "next/server";
+import { MongoClient } from "mongodb";
 
-type User = { id: string; name: string; email: string; password: string }
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { email, password } = body as Partial<User>
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      return NextResponse.json({ error: "Database URI is missing" }, { status: 500 });
+    }
+
+    const body = await req.json();
+    const { email, password } = body;
+
     if (!email || !password) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+      return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
     }
 
-    const users = await readJsonFile<User[]>("users.json", [])
+    const client = new MongoClient(uri);
+    await client.connect();
+    
+    const db = client.db("zerowaste_db");
+    const usersCol = db.collection("users");
 
-    const user = users.find((u) => u.email === email && u.password === password)
+    // Cari user berdasarkan email dan password
+    const user = await usersCol.findOne({ email, password });
+
     if (!user) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+      await client.close();
+      return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
     }
 
-    const { password: _p, ...out } = user
-    return NextResponse.json(out)
-  } catch (err) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    // Hapus password dari data yang dikirim ke frontend demi keamanan
+    const { password: _p, ...userWithoutPassword } = user;
+    
+    await client.close();
+    return NextResponse.json(userWithoutPassword);
+  } catch (err: any) {
+    console.error("Login Error:", err.message);
+    return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 });
   }
 }
