@@ -56,8 +56,16 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ ok: true });
       } catch {
-        // If Mongo is unreachable, fallback to local JSON for development.
+        // If Mongo is unreachable, fallback to local JSON only for local development.
       }
+    }
+
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+    if (isProduction) {
+      return NextResponse.json(
+        { error: "Database belum terhubung. Cek MONGODB_URI di environment deployment." },
+        { status: 503 }
+      );
     }
 
     const users = await readJsonFile<UserRecord[]>("users.json", []);
