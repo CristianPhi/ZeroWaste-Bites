@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
 import { readJsonFile, writeJsonFile } from "@/lib/storage";
+import { connectMongo, hasMongoConfig } from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
-
-const uri = process.env.MONGODB_URI || "";
 
 type UserRecord = {
   id: string;
@@ -29,9 +27,9 @@ export async function POST(req: Request) {
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
-    if (!uri && isProduction) {
+    if (!hasMongoConfig() && isProduction) {
       return NextResponse.json(
-        { error: "MONGODB_URI belum di-set di environment deployment." },
+        { error: "MongoDB config belum lengkap di environment deployment." },
         { status: 503 }
       );
     }
@@ -42,11 +40,11 @@ export async function POST(req: Request) {
       p = "+62" + p.substring(1);
     }
 
-    if (uri) {
+    if (hasMongoConfig()) {
       try {
-        client = new MongoClient(uri);
-        await client.connect();
-        const db = client.db("zerowaste_db");
+        const mongo = await connectMongo();
+        client = mongo.client;
+        const db = mongo.db;
         const usersCol = db.collection("users");
 
         const existingUser = await usersCol.findOne({ email: normalizedEmail });
