@@ -1,45 +1,45 @@
-import { NextResponse } from "next/server"
-import { MongoClient } from "mongodb"
+import { NextResponse } from "next/server";
+import { MongoClient } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+export const dynamic = "force-dynamic";
 
-export async function POST(req) {
+const uri = process.env.MONGODB_URI || "";
+
+export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { name, email, password, phone } = body
+    const body = await req.json();
+    const { name, email, password, phone } = body || {};
 
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+    if (!name || !email || !password || !phone) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    // Cara aman memproses nomor tanpa startsWith di awal
+    let p = String(phone).trim();
+    if (p.substring(0, 1) === '0') {
+      p = "+62" + p.substring(1);
+    }
+
+    const client = new MongoClient(uri);
     await client.connect();
     const db = client.db("zerowaste_db");
     const usersCol = db.collection("users");
 
-    // 1. Cek apakah email sudah terdaftar di MongoDB
-    const existingUser = await usersCol.findOne({ email: email });
+    const existingUser = await usersCol.findOne({ email });
     if (existingUser) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 409 })
+      await client.close();
+      return NextResponse.json({ error: "Email exists" }, { status: 409 });
     }
 
-    // 2. Buat user baru
-    const newUser = { 
-      id: `user_${Date.now()}`, 
-      name, 
-      email, 
-      password, // Tips: Kedepannya sebaiknya di-hash pakai bcrypt ya!
-      phone 
-    }
+    await usersCol.insertOne({
+      id: `user_${Date.now()}`,
+      name, email, password, phone: p,
+      createdAt: new Date()
+    });
 
-    // 3. Simpan ke MongoDB (Bukan file JSON!)
-    await usersCol.insertOne(newUser);
-
-    const { password: _p, ...out } = newUser
-    return NextResponse.json(out)
-
-  } catch (err) {
-    console.error("🔥 REGISTER ERROR:", err);
-    return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 })
+    await client.close();
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
