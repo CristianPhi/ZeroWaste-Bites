@@ -29,17 +29,6 @@ export default function RegisterPage() {
         return
       }
 
-      // send OTP to phone (real SMS if Twilio configured)
-      try {
-        await fetch("/api/auth/send-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone }),
-        })
-      } catch {
-        // ignore
-      }
-
       // after register, navigate to login with email prefilled
       router.push(`/auth/login?email=${encodeURIComponent(email)}`)
     } catch (err) {
