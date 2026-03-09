@@ -29,6 +29,11 @@ export async function POST(req) {
 
     if (!phone) return NextResponse.json({ error: "Phone required" }, { status: 400 });
 
+if (!phone || !(phone.startsWith("0") || phone.startsWith("+62"))) {
+  setLoading(false)
+  return alert('Phone number must start with 0 or +62')
+}
+
     const code = generateCode()
     const expiresAt = Date.now() + 5 * 60 * 1000 // 5 menit
 
