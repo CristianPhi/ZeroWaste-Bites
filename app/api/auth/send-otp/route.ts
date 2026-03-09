@@ -1,34 +1,26 @@
-import { NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
-import nodemailer from "nodemailer";
+    // Pastikan variabel ini terbaca
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_PASS;
 
-export const dynamic = "force-dynamic";
+    if (email && gmailUser && gmailPass) {
+      const transporter = nodemailer.createTransport({
+        service: "gmail", // Langsung tembak service gmail
+        auth: { 
+          user: gmailUser, 
+          pass: gmailPass.replace(/\s+/g, "") // Otomatis hapus spasi kalau kamu copas dengan spasi
+        },
+      });
 
-export async function POST(req: Request) {
-  try {
-    const uri = process.env.MONGODB_URI;
-    
-    // Validasi skema secara manual sebelum dicolok ke MongoClient
-    if (!uri || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
-      console.error("❌ Link MongoDB salah atau kosong!");
-      return NextResponse.json({ error: "Database URI invalid" }, { status: 500 });
+      try {
+        await transporter.sendMail({
+          from: `"ZeroWaste Bites" <${gmailUser}>`,
+          to: email,
+          subject: "Kode Verifikasi ZeroWaste Bites",
+          text: `Kode OTP Anda adalah: ${code}. Kode ini berlaku selama 5 menit.`,
+        });
+        console.log("✅ Email sukses dikirim ke:", email);
+      } catch (mailErr) {
+        console.error("❌ Gagal kirim email:", mailErr);
+        // Tetap kembalikan ok agar user tidak bingung, tapi kita tahu di log kalau error
+      }
     }
-
-    const client = new MongoClient(uri);
-    const body = await req.json();
-    const { email } = body;
-    let phone = body.phone || body.phoneNumber;
-
-    await client.connect();
-    const db = client.db("zerowaste_db");
-    const usersCol = db.collection("users");
-    const otpsCol = db.collection("otps");
-
-    // ... (sisa logika pencarian user dan kirim email tetap sama) ...
-    
-    await client.close();
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: "Server error", detail: err.message }, { status: 500 });
-  }
-}
