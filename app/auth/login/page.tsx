@@ -47,26 +47,30 @@ export default function LoginPage() {
     }
   }
 
-  const verifyOtp = async () => {
-    if (!email || !otp) return alert("Enter email and OTP")
-    setLoading(true)
-    try {
-      const res = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: otp }),
-      })
-      const data = await res.json()
-      setLoading(false)
-      if (!res.ok) return alert(data.error || "OTP verification failed")
-      setUser({ id: data.id, name: data.name, email: data.email })
-      setVerified(true)
-      router.push("/")
-    } catch (err) {
-      setLoading(false)
-      alert("OTP verify error")
-    }
+  const handleVerify = async () => {
+  // Pastikan phone dan otp diambil dari state yang benar
+  if (!phone || !otp) {
+    alert("Nomor HP dan kode wajib diisi");
+    return;
   }
+
+  const res = await fetch("/api/auth/verify-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      phone: phone, // Jangan sampai kosong!
+      code: otp     // Ini adalah angka 560503 yang kamu ketik
+    }),
+  });
+  
+  const data = await res.json();
+  if (data.ok) {
+    // Berhasil masuk!
+    window.location.href = "/dashboard";
+  } else {
+    alert(data.error);
+  }
+};
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
