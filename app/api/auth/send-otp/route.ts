@@ -15,21 +15,15 @@ export async function POST(req: Request) {
     let phone = body.phone || body.phoneNumber; 
     const email = body.email
 
-    if (!client.connect) await client.connect();
+    await client.connect();
     const db = client.db("zerowaste_db");
     const usersCol = db.collection("users");
     const otpsCol = db.collection("otps");
 
-    // 1. Cari user di MongoDB jika inputnya email
     if (!phone && email) {
       const user = await usersCol.findOne({ email: email });
       if (!user || !user.phone) {
         return NextResponse.json({ error: "No phone for this user" }, { status: 404 });
-      }
-      phone = user.phone;
-    }
-
-    if (!phone) return NextResponse.json({ error: "Phone required" }, { status: 404 });
       }
       phone = user.phone;
     }
@@ -39,19 +33,19 @@ export async function POST(req: Request) {
     }
 
     // LOGIKA AUTO-CONVERT 0 KE +62
-    phone = phone.toString().trim();
-    if (phone.startsWith("0")) {
-      phone = "+62" + phone.substring(1);
-    } else if (phone.startsWith("62") && !phone.startsWith("+62")) {
-      phone = "+" + phone;
+    let formattedPhone = phone.toString().trim();
+    if (formattedPhone.startsWith("0")) {
+      formattedPhone = "+62" + formattedPhone.substring(1);
+    } else if (formattedPhone.startsWith("62") && !formattedPhone.startsWith("+62")) {
+      formattedPhone = "+" + formattedPhone;
     }
 
     const code = generateCode()
     const expiresAt = Date.now() + 5 * 60 * 1000 
 
     await otpsCol.updateOne(
-      { phone: phone },
-      { $set: { phone, code, expiresAt } },
+      { phone: formattedPhone },
+      { $set: { phone: formattedPhone, code, expiresAt } },
       { upsert: true }
     );
 
@@ -74,7 +68,7 @@ export async function POST(req: Request) {
       })
     }
 
-    return NextResponse.json({ ok: true, formattedPhone: phone })
+    return NextResponse.json({ ok: true, formattedPhone: formattedPhone })
 
   } catch (err: any) {
     console.error("🔥 ERROR:", err);
