@@ -1,8 +1,21 @@
 import { MetadataRoute } from 'next'
+import { dealPosts, stores } from '@/lib/data'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zerowastebites-rust.vercel.app'
   const now = new Date()
+  const dealUrls: MetadataRoute.Sitemap = dealPosts.map((deal) => ({
+    url: `${baseUrl}/deal/${encodeURIComponent(deal.id)}`,
+    lastModified: now,
+    changeFrequency: 'daily',
+    priority: 0.8,
+  }))
+  const storeUrls: MetadataRoute.Sitemap = stores.map((store) => ({
+    url: `${baseUrl}/store/${encodeURIComponent(store.id)}`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.7,
+  }))
 
   return [
     {
@@ -17,53 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'daily',
       priority: 0.9,
     },
-    {
-      url: `${baseUrl}/saved-deals`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/favorite-stores`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/orders`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/payments`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/profile`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/auth/login`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/auth/register`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/admin`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
+    ...dealUrls,
+    ...storeUrls,
   ]
 }
