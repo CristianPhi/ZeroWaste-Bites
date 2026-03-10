@@ -102,7 +102,7 @@ export function ProfileContent() {
           <User className="h-7 w-7 text-primary" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-foreground">{user?.name ?? "Guest"}</h1>
+          <h1 className="text-lg font-bold text-foreground">{user?.username ? `@${user.username}` : user?.name ?? "Guest"}</h1>
           <p className="text-xs text-muted-foreground">{user?.email ?? "Not signed in"}</p>
           {isVerified && (
             <div className="mt-1 flex items-center gap-1">
@@ -165,7 +165,7 @@ export function ProfileContent() {
               <span className="text-base font-bold text-foreground">{foodRescuedKg} kg</span>
               <span className="mt-0.5 text-[10px] text-muted-foreground">Food Rescued</span>
             </div>
-            <div className="mt-3 text-right">
+            <div className="mt-3 flex justify-center">
               <button
                 onClick={() => {
                   try {
@@ -186,21 +186,6 @@ export function ProfileContent() {
             </div>
           </div>
       </div>
-
-      {/* Seller CTA */}
-      <Link
-        href="/admin"
-        className="flex items-center gap-3 rounded-xl bg-secondary p-4 ring-1 ring-border/50 transition-colors hover:bg-secondary/80"
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-          <Store className="h-5 w-5 text-primary" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-foreground">Are you a store owner?</p>
-          <p className="text-[11px] text-muted-foreground">Start posting your deals and reduce waste</p>
-        </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </Link>
 
       {/* Menu */}
       <div className="flex flex-col overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border/50">

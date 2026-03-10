@@ -43,6 +43,19 @@ export async function GET(req: Request) {
     if (hasMongoConfig()) {
       const mongo = await connectMongo()
       client = mongo.client
+      const usersCol = mongo.db.collection("users")
+      const userDoc = await usersCol.findOne(
+        { email: normalizedEmail },
+        { projection: { favorites: 1 } }
+      )
+
+      if (userDoc) {
+        return NextResponse.json({
+          ok: true,
+          favorites: sanitizeFavorites(userDoc.favorites),
+        })
+      }
+
       const doc = await mongo.db.collection("favorites").findOne({ email: normalizedEmail })
       return NextResponse.json({
         ok: true,
@@ -84,8 +97,7 @@ export async function POST(req: Request) {
     if (hasMongoConfig()) {
       const mongo = await connectMongo()
       client = mongo.client
-      const col = mongo.db.collection("favorites")
-
+      const usersCol = mongo.db.collection("users")
       const update =
         action === "add"
           ? type === "deal"
@@ -95,7 +107,24 @@ export async function POST(req: Request) {
             ? { $pull: { "favorites.savedDeals": id } }
             : { $pull: { "favorites.favoriteStores": id } }
 
-      await col.updateOne(
+      const userResult = await usersCol.updateOne(
+        { email: normalizedEmail },
+        {
+          $setOnInsert: { favorites: { savedDeals: [], favoriteStores: [] } },
+          ...update,
+        }
+      )
+
+      if (userResult.matchedCount) {
+        const latestUser = await usersCol.findOne(
+          { email: normalizedEmail },
+          { projection: { favorites: 1 } }
+        )
+        return NextResponse.json({ ok: true, favorites: sanitizeFavorites(latestUser?.favorites) })
+      }
+
+      const fallbackCol = mongo.db.collection("favorites")
+      await fallbackCol.updateOne(
         { email: normalizedEmail },
         {
           $setOnInsert: {
@@ -107,7 +136,7 @@ export async function POST(req: Request) {
         { upsert: true }
       )
 
-      const latest = await col.findOne({ email: normalizedEmail })
+      const latest = await fallbackCol.findOne({ email: normalizedEmail })
       return NextResponse.json({ ok: true, favorites: sanitizeFavorites(latest?.favorites) })
     }
 
@@ -116,7 +145,13 @@ export async function POST(req: Request) {
     }
 
     const all = await readFile()
-    const current = sanitizeFavorites(all[normalizedEmail])
+    let current = sanitizeFavorites(all[normalizedEmail])
+
+    const users = await readJsonFile<any[]>("users.json", [])
+    const userIdx = users.findIndex((u) => String(u.email || "").trim().toLowerCase() === normalizedEmail)
+    if (userIdx >= 0) {
+      current = sanitizeFavorites(users[userIdx].favorites)
+    }
 
     if (action === "add") {
       if (type === "deal") {
@@ -134,6 +169,11 @@ export async function POST(req: Request) {
 
     all[normalizedEmail] = current
     await writeFile(all)
+
+    if (userIdx >= 0) {
+      users[userIdx].favorites = current
+      await writeJsonFile("users.json", users)
+    }
 
     return NextResponse.json({ ok: true, favorites: current })
   } catch (err) {

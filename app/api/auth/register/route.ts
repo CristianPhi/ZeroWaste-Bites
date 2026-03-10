@@ -9,6 +9,11 @@ type UserRecord = {
   name: string;
   email: string;
   username?: string;
+  role?: "customer" | "store_owner";
+  favorites?: {
+    savedDeals: string[];
+    favoriteStores: string[];
+  };
   password: string;
   phone?: string;
   createdAt?: string | Date;
@@ -24,7 +29,7 @@ export async function POST(req: Request) {
     const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
     const body = await req.json();
-    const { name, email, username, password, phone } = body || {};
+    const { name, email, username, password, phone, role } = body || {};
 
     if (!name || !email || !password || !phone || !username) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -32,6 +37,7 @@ export async function POST(req: Request) {
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const normalizedUsername = normalizeUsername(String(username));
+    const normalizedRole = role === "store_owner" ? "store_owner" : "customer";
 
     if (normalizedUsername.length < 3) {
       return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
@@ -69,6 +75,8 @@ export async function POST(req: Request) {
           name,
           email: normalizedEmail,
           username: normalizedUsername,
+          role: normalizedRole,
+          favorites: { savedDeals: [], favoriteStores: [] },
           password,
           phone: p,
           createdAt: new Date(),
@@ -108,6 +116,8 @@ export async function POST(req: Request) {
       name,
       email: normalizedEmail,
       username: normalizedUsername,
+      role: normalizedRole,
+      favorites: { savedDeals: [], favoriteStores: [] },
       password,
       phone: p,
       createdAt: new Date().toISOString(),

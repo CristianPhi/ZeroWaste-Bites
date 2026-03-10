@@ -1,12 +1,14 @@
 "use client"
 
-import { Search, SlidersHorizontal } from "lucide-react"
-import { useState } from "react"
+import { Heart, Search, SlidersHorizontal } from "lucide-react"
+import { useEffect, useState } from "react"
 import { dealPosts, stores } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import Link from "next/link"
 import Image from "next/image"
 import { AppLogo } from "@/components/app-logo"
+import { useStudent } from "@/lib/student-context"
+import { addFavorite, getFavorites, removeFavorite } from "@/lib/favorites"
 
 const categories = ["All", "Bakery", "Meals", "Snacks", "Drinks"]
 
@@ -14,6 +16,52 @@ export function BrowseContent() {
   const [query, setQuery] = useState("")
   const [activeCategory, setActiveCategory] = useState("All")
   const [showStores, setShowStores] = useState(false)
+  const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([])
+  const { user } = useStudent()
+
+  useEffect(() => {
+    if (!showStores) return
+    if (typeof window === "undefined") return
+
+    ;(async () => {
+      try {
+        if (user?.email) {
+          const fav = await getFavorites(user.email)
+          setFavoriteStoreIds(fav.favoriteStores || [])
+          return
+        }
+
+        const ids: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (!key) continue
+          if (key.startsWith("favorite:")) ids.push(key.replace("favorite:", ""))
+        }
+        setFavoriteStoreIds(ids)
+      } catch {
+        setFavoriteStoreIds([])
+      }
+    })()
+  }, [showStores, user?.email])
+
+  const toggleStoreFavorite = async (storeId: string) => {
+    const isFav = favoriteStoreIds.includes(storeId)
+    try {
+      if (user?.email) {
+        if (isFav) await removeFavorite(user.email, "store", storeId)
+        else await addFavorite(user.email, "store", storeId)
+      } else {
+        if (isFav) localStorage.removeItem(`favorite:${storeId}`)
+        else localStorage.setItem(`favorite:${storeId}`, "true")
+      }
+
+      setFavoriteStoreIds((prev) =>
+        prev.includes(storeId) ? prev.filter((id) => id !== storeId) : [...prev, storeId]
+      )
+    } catch {
+      // ignore toggle failure for now
+    }
+  }
 
   const filteredDeals = dealPosts.filter((post) => {
     const matchQuery =
@@ -113,7 +161,9 @@ export function BrowseContent() {
           <p className="text-xs text-muted-foreground">
             {filteredStores.length} store{filteredStores.length !== 1 ? "s" : ""} found
           </p>
-          {filteredStores.map((store) => (
+          {filteredStores.map((store) => {
+            const isFavorite = favoriteStoreIds.includes(store.id)
+            return (
             <Link
               key={store.id}
               href={`/store/${store.id}`}
@@ -139,8 +189,20 @@ export function BrowseContent() {
               <div className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
                 {dealPosts.filter((p) => p.store.id === store.id).length} deals
               </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  void toggleStoreFavorite(store.id)
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/80"
+                aria-label={isFavorite ? "Remove store from favorites" : "Add store to favorites"}
+              >
+                <Heart className={`h-4 w-4 ${isFavorite ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+              </button>
             </Link>
-          ))}
+          )})}
         </div>
       ) : (
         <div className="pt-2">

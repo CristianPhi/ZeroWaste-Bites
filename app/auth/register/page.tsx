@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
+  const [role, setRole] = useState<"customer" | "store_owner">("customer")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -46,7 +47,7 @@ export default function RegisterPage() {
         const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, username, email, password, phone }),
+        body: JSON.stringify({ name, username, email, password, phone, role }),
       })
       const data = await res.json()
       setLoading(false)
@@ -118,6 +119,30 @@ export default function RegisterPage() {
             className={inputClass}
           />
         </label>
+
+        <div className="rounded-xl border border-border bg-card p-3">
+          <p className="mb-2 text-xs text-muted-foreground">I am signing up as</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setRole("customer")}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                role === "customer" ? "border-primary bg-primary/10 text-primary" : "border-border"
+              }`}
+            >
+              Customer
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("store_owner")}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                role === "store_owner" ? "border-primary bg-primary/10 text-primary" : "border-border"
+              }`}
+            >
+              Store Owner
+            </button>
+          </div>
+        </div>
 
         <label className="flex flex-col text-sm">
           <span className="mb-1 text-xs text-muted-foreground">Password</span>

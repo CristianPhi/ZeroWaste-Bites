@@ -34,6 +34,11 @@ interface PostItem {
 }
 
 export function AdminDashboard() {
+  const [itemName, setItemName] = useState("")
+  const [photoUrl, setPhotoUrl] = useState("")
+  const [originalPriceInput, setOriginalPriceInput] = useState("")
+  const [discountInput, setDiscountInput] = useState("50")
+  const [quantityInput, setQuantityInput] = useState("1")
   const [posts, setPosts] = useState<PostItem[]>(
     storePosts.map((p) => ({
       id: p.id,
@@ -61,6 +66,38 @@ export function AdminDashboard() {
     (a, p) => a + p.discountedPrice * p.claimed,
     0
   )
+
+  const handleUploadDeal = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const originalPrice = Number(originalPriceInput)
+    const discountPercent = Math.max(1, Math.min(95, Number(discountInput)))
+    const quantity = Math.max(1, Number(quantityInput))
+
+    if (!itemName || !photoUrl || !originalPrice || !discountPercent || !quantity) return
+
+    const discountedPrice = Math.max(1000, Math.round(originalPrice * (1 - discountPercent / 100)))
+
+    const newPost: PostItem = {
+      id: `custom-${Date.now()}`,
+      itemName,
+      image: photoUrl,
+      originalPrice,
+      discountedPrice,
+      discountPercent,
+      quantity,
+      claimed: 0,
+      active: true,
+      expiresAt: "Tonight, 10 PM",
+    }
+
+    setPosts((prev) => [newPost, ...prev])
+    setItemName("")
+    setPhotoUrl("")
+    setOriginalPriceInput("")
+    setDiscountInput("50")
+    setQuantityInput("1")
+  }
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -132,11 +169,85 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      {/* Post a new deal */}
-      <button className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
-        <Plus className="h-4 w-4" />
-        Post a New Deal
-      </button>
+      {/* Upload deal */}
+      <form onSubmit={handleUploadDeal} className="rounded-xl bg-card p-4 shadow-sm ring-1 ring-border/50">
+        <div className="mb-3 flex items-center gap-2">
+          <Plus className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Upload New Deal</h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="text-xs text-muted-foreground">
+            Food name
+            <input
+              type="text"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              placeholder="Contoh: Roti Tuna"
+              required
+            />
+          </label>
+
+          <label className="text-xs text-muted-foreground">
+            Photo URL
+            <input
+              type="url"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              placeholder="https://..."
+              required
+            />
+          </label>
+
+          <label className="text-xs text-muted-foreground">
+            Original price (IDR)
+            <input
+              type="number"
+              min={1000}
+              value={originalPriceInput}
+              onChange={(e) => setOriginalPriceInput(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              placeholder="15000"
+              required
+            />
+          </label>
+
+          <label className="text-xs text-muted-foreground">
+            Discount (%)
+            <input
+              type="number"
+              min={1}
+              max={95}
+              value={discountInput}
+              onChange={(e) => setDiscountInput(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              required
+            />
+          </label>
+
+          <label className="text-xs text-muted-foreground md:col-span-2">
+            Quantity available
+            <input
+              type="number"
+              min={1}
+              value={quantityInput}
+              onChange={(e) => setQuantityInput(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              required
+            />
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" />
+          Upload Deal
+        </button>
+      </form>
 
       {/* Your posts */}
       <div>

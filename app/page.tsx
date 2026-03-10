@@ -13,10 +13,15 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) {
       router.push("/auth/login")
+      return
+    }
+
+    if (user.role === "store_owner") {
+      router.push("/admin")
     }
   }, [user, router])
 
-  if (!user) return null
+  if (!user || user.role === "store_owner") return null
 
   return (
     <main className="min-h-screen w-full bg-background">

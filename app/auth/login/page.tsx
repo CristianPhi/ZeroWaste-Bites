@@ -67,7 +67,9 @@ export default function LoginPage() {
           }
         }
         showFeedback("success", "Login Berhasil", "Selamat datang kembali.")
-        setTimeout(() => { window.location.href = "/" }, 1200)
+        setTimeout(() => {
+          window.location.href = data.user?.role === "store_owner" ? "/admin" : "/"
+        }, 1200)
       } else {
         showFeedback("error", "Login Gagal", data.error || "Email atau password salah")
       }
@@ -80,8 +82,8 @@ export default function LoginPage() {
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12">
       <header className="mb-8 text-center">
-        <Link href="/" className="inline-flex justify-center">
-          <AppLogo alt="Logo" className="h-10 w-auto" priority />
+        <Link href="/" className="block">
+          <AppLogo alt="Logo" className="mx-auto h-10 w-auto" priority />
         </Link>
       </header>
 

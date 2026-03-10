@@ -5,8 +5,8 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 interface StudentContextType {
   isVerified: boolean
   setVerified: (v: boolean) => void
-  user: { id: string; name: string; email: string } | null
-  setUser: (u: { id: string; name: string; email: string } | null) => void
+  user: { id: string; name: string; email: string; username?: string; role?: "customer" | "store_owner" } | null
+  setUser: (u: { id: string; name: string; email: string; username?: string; role?: "customer" | "store_owner" } | null) => void
 }
 
 const StudentContext = createContext<StudentContextType>({
@@ -26,7 +26,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const [user, setUserState] = useState<{ id: string; name: string; email: string } | null>(() => {
+  const [user, setUserState] = useState<{ id: string; name: string; email: string; username?: string; role?: "customer" | "store_owner" } | null>(() => {
     if (typeof window === "undefined") return null
     try {
       const rawLocal = localStorage.getItem("user")
@@ -70,7 +70,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     setVerifiedState(v)
   }
 
-  function setUser(u: { id: string; name: string; email: string } | null) {
+  function setUser(u: { id: string; name: string; email: string; username?: string; role?: "customer" | "store_owner" } | null) {
     setUserState(u)
     if (!u) {
       // logging out clears verified

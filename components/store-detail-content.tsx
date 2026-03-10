@@ -2,14 +2,52 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Clock, MapPin, ShieldCheck, Star } from "lucide-react"
+import { ArrowLeft, Clock, Heart, MapPin, ShieldCheck, Star } from "lucide-react"
 import { stores, dealPosts, formatPrice } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { AppLogo } from "@/components/app-logo"
+import { useEffect, useState } from "react"
+import { addFavorite, getFavorites, removeFavorite } from "@/lib/favorites"
+import { useStudent } from "@/lib/student-context"
 
 export function StoreDetailContent({ storeId }: { storeId: string }) {
   const store = stores.find((s) => s.id === storeId)
   const storeDeals = dealPosts.filter((p) => p.store.id === storeId)
+  const { user } = useStudent()
+  const [isFavorite, setIsFavorite] = useState(false)
+
+  useEffect(() => {
+    if (!store) return
+    ;(async () => {
+      try {
+        if (user?.email) {
+          const fav = await getFavorites(user.email)
+          setIsFavorite((fav.favoriteStores || []).includes(store.id))
+          return
+        }
+
+        setIsFavorite(localStorage.getItem(`favorite:${store.id}`) === "true")
+      } catch {
+        setIsFavorite(false)
+      }
+    })()
+  }, [store?.id, user?.email])
+
+  const toggleFavorite = async () => {
+    if (!store) return
+    try {
+      if (user?.email) {
+        if (isFavorite) await removeFavorite(user.email, "store", store.id)
+        else await addFavorite(user.email, "store", store.id)
+      } else {
+        if (isFavorite) localStorage.removeItem(`favorite:${store.id}`)
+        else localStorage.setItem(`favorite:${store.id}`, "true")
+      }
+      setIsFavorite((v) => !v)
+    } catch {
+      // ignore
+    }
+  }
 
   if (!store) {
     return (
@@ -32,7 +70,6 @@ export function StoreDetailContent({ storeId }: { storeId: string }) {
           <Link href="/" aria-label="Go to Feed">
             <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
           </Link>
-          <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Store</h1>
         </div>
 
         <Link
@@ -76,6 +113,14 @@ export function StoreDetailContent({ storeId }: { storeId: string }) {
               </span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={toggleFavorite}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-border/50"
+            aria-label={isFavorite ? "Remove store from favorites" : "Add store to favorites"}
+          >
+            <Heart className={`h-4 w-4 ${isFavorite ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+          </button>
         </div>
 
         {/* Stats row */}
