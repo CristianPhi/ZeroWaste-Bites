@@ -8,8 +8,12 @@ const _dmSans = DM_Sans({ subsets: ["latin"], variable: '--font-dm-sans' });
 const _spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: '--font-space-grotesk' });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://zerowastebites-rust.vercel.app'),
   title: 'ZeroWaste Bites - Save Food, Save Money',
   description: 'Get heavily discounted food from stores near you before they close. Reduce food waste while saving money.',
+  alternates: {
+    canonical: '/',
+  },
   generator: 'v0.app',
   icons: {
     icon: '/images/Logo.png',
