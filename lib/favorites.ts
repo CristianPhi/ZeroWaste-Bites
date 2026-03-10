@@ -1,6 +1,7 @@
 export async function getFavorites(email: string) {
+  const normalizedEmail = email.trim().toLowerCase()
   try {
-    const res = await fetch(`/api/favorites?email=${encodeURIComponent(email)}`)
+    const res = await fetch(`/api/favorites?email=${encodeURIComponent(normalizedEmail)}`)
     if (!res.ok) return { savedDeals: [], favoriteStores: [] }
     const data = await res.json()
     return data.favorites || { savedDeals: [], favoriteStores: [] }
@@ -10,11 +11,12 @@ export async function getFavorites(email: string) {
 }
 
 export async function addFavorite(email: string, type: "deal" | "store", id: string) {
+  const normalizedEmail = email.trim().toLowerCase()
   try {
     const res = await fetch(`/api/favorites`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, action: "add", type: type === "deal" ? "deal" : "store", id }),
+      body: JSON.stringify({ email: normalizedEmail, action: "add", type: type === "deal" ? "deal" : "store", id }),
     })
     if (!res.ok) return null
     return res.json()
@@ -24,11 +26,12 @@ export async function addFavorite(email: string, type: "deal" | "store", id: str
 }
 
 export async function removeFavorite(email: string, type: "deal" | "store", id: string) {
+  const normalizedEmail = email.trim().toLowerCase()
   try {
     const res = await fetch(`/api/favorites`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, action: "remove", type: type === "deal" ? "deal" : "store", id }),
+      body: JSON.stringify({ email: normalizedEmail, action: "remove", type: type === "deal" ? "deal" : "store", id }),
     })
     if (!res.ok) return null
     return res.json()

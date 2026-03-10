@@ -11,7 +11,7 @@ export default async function PaymentSuccessPage({
   const displayAmount = amount > 0 ? `IDR ${amount.toLocaleString("id-ID")}` : null
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-12">
+    <main className="w-full px-4 py-12">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />

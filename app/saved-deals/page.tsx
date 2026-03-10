@@ -51,7 +51,7 @@ export default function SavedDealsPage() {
     .filter((deal): deal is DealPost => Boolean(deal))
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
+    <main className="w-full px-4 py-8">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />

@@ -12,7 +12,7 @@ import { getFavorites, addFavorite, removeFavorite } from "@/lib/favorites"
 export function DealPostCard({ post }: { post: DealPost }) {
   const [liked, setLiked] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
-  const { isVerified } = useStudent()
+  const { isVerified, user } = useStudent()
   const router = useRouter()
   const studentPrice = getStudentPrice(post.discountedPrice)
   const totalStudentDiscount = Math.round(
@@ -37,8 +37,6 @@ export function DealPostCard({ post }: { post: DealPost }) {
     // toggle and persist
     void (async () => {
       try {
-        const stored = localStorage.getItem("user")
-        const user = stored ? JSON.parse(stored) : null
         if (user && user.email) {
           if (!liked) {
             await addFavorite(user.email, "deal", post.id)
@@ -63,11 +61,9 @@ export function DealPostCard({ post }: { post: DealPost }) {
     // determine initial liked state from server DB or localStorage
     (async () => {
       try {
-        const stored = localStorage.getItem("user")
-        const user = stored ? JSON.parse(stored) : null
         if (user && user.email) {
           const fav = await getFavorites(user.email)
-          setLiked(fav.savedDeals.includes(post.id))
+          setLiked((fav.savedDeals || []).includes(post.id))
         } else {
           setLiked(localStorage.getItem(`saved:${post.id}`) === "true")
         }
@@ -75,7 +71,7 @@ export function DealPostCard({ post }: { post: DealPost }) {
         setLiked(false)
       }
     })()
-  }, [post.id])
+  }, [post.id, user?.email])
 
   return (
     <Link href={`/deal/${post.id}`} onClick={handleCardClick} className="group block bg-card">

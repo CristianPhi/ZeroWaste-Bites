@@ -48,7 +48,7 @@ export default function FavoriteStoresPage() {
   const favStores = favIds.map((id) => stores.find((s) => s.id === id)).filter(Boolean)
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
+    <main className="w-full px-4 py-8">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />

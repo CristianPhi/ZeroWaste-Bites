@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function BrowsePage() {
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl bg-background">
+    <main className="min-h-screen w-full bg-background">
       <BrowseContent />
       <BottomNav />
     </main>

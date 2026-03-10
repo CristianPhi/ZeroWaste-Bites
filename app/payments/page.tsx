@@ -126,7 +126,7 @@ function PaymentsPageContent() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-12">
+    <main className="w-full px-4 py-12">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
@@ -232,7 +232,7 @@ function PaymentsPageContent() {
 
 export default function PaymentsPage() {
   return (
-    <Suspense fallback={<main className="mx-auto w-full max-w-5xl px-4 py-12" />}>
+    <Suspense fallback={<main className="w-full px-4 py-12" />}>
       <PaymentsPageContent />
     </Suspense>
   )

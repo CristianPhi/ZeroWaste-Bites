@@ -8,7 +8,7 @@ export default async function StoreDetailPage({
   const { id } = await params
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl bg-background">
+    <main className="min-h-screen w-full bg-background">
       <StoreDetailContent storeId={id} />
     </main>
   )

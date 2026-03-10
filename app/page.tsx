@@ -19,7 +19,7 @@ export default function HomePage() {
   if (!user) return null
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl bg-background">
+    <main className="min-h-screen w-full bg-background">
       <HomeContent />
       <BottomNav />
     </main>
