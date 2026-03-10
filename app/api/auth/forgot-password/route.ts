@@ -30,6 +30,7 @@ function randomOtp() {
 export async function POST(req: Request) {
   let client;
   try {
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
     const body = await req.json();
     const identifier = String(body?.identifier || "").trim().toLowerCase();
 
@@ -95,10 +96,27 @@ export async function POST(req: Request) {
     });
 
     await writeJsonFile("otps.json", nextOtps);
+
+    const hasGmailConfig = Boolean(process.env.GMAIL_APP_PASSWORD?.trim());
+    if (!hasGmailConfig) {
+      if (isProduction) {
+        return NextResponse.json(
+          { error: "Email service belum dikonfigurasi (GMAIL_APP_PASSWORD)." },
+          { status: 503 }
+        );
+      }
+
+      return NextResponse.json({ ok: true, devOtp: code, email: targetEmail, devMode: true });
+    }
+
     await sendResetOtpEmail(targetEmail, code);
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+    if (!isProduction) {
+      return NextResponse.json({ ok: true, devMode: true, note: err?.message || "Email send failed in dev" });
+    }
     return NextResponse.json(
       { error: "Gagal mengirim email reset password", detail: err?.message || "Unknown error" },
       { status: 500 }

@@ -47,7 +47,17 @@ export default function ForgotPasswordPage() {
       }
 
       setStep(2);
-      showFeedback("success", "OTP Terkirim", "Cek email kamu untuk kode reset password.");
+      if (data.email) {
+        setEmail(String(data.email));
+      } else if (identifier.includes("@")) {
+        setEmail(identifier);
+      }
+
+      if (data.devMode && data.devOtp) {
+        showFeedback("success", "Mode Development", `OTP testing: ${data.devOtp}`);
+      } else {
+        showFeedback("success", "OTP Terkirim", "Cek email kamu untuk kode reset password.");
+      }
     } catch {
       setLoading(false);
       showFeedback("error", "Server Error", "Gagal terhubung ke server.");
@@ -96,14 +106,14 @@ export default function ForgotPasswordPage() {
       {step === 1 ? (
         <form onSubmit={requestOtp} className="mt-6 space-y-4">
           <label className="block text-sm">
-            <span className="mb-1 block text-xs text-muted-foreground">Email atau Username</span>
+            <span className="mb-1 block text-xs text-mu            git add app/api/auth/forgot-password/route.ts app/auth/forgot-password/page.tsx; git commit -m "Handle forgot-password gracefully without Gmail config in dev"; git push origin mainted-foreground">Email atau Username</span>
             <input
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
               className="w-full rounded-md border px-3 py-2"
-              placeholder="nama@email.com atau username"
+              placeholder="email atau username"
             />
           </label>
 
