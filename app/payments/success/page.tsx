@@ -16,7 +16,6 @@ export default async function PaymentSuccessPage({
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
-        <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Payment Success</h1>
       </header>
       <div className="text-center">
         <h2 className="mb-2 text-2xl font-bold">Payment successful</h2>

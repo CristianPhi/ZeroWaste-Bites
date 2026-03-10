@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { useEffect } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { AuthFeedbackModal } from "@/components/auth-feedback-modal"
 import { AppLogo } from "@/components/app-logo"
@@ -9,6 +10,7 @@ import { AppLogo } from "@/components/app-logo"
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -26,6 +28,18 @@ export default function LoginPage() {
   const inputClass =
     "w-full rounded-md border-2 border-emerald-600/35 bg-background/65 p-2 text-foreground placeholder:text-muted-foreground dark:border-emerald-300/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
 
+  useEffect(() => {
+    try {
+      const remembered = localStorage.getItem("user")
+      const sessionUser = sessionStorage.getItem("user")
+      if (remembered || sessionUser) {
+        window.location.href = "/"
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -42,7 +56,15 @@ export default function LoginPage() {
 
       if (data.ok) {
         if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user))
+          if (rememberMe) {
+            localStorage.setItem("rememberMe", "true")
+            localStorage.setItem("user", JSON.stringify(data.user))
+            sessionStorage.removeItem("user")
+          } else {
+            localStorage.removeItem("rememberMe")
+            localStorage.removeItem("user")
+            sessionStorage.setItem("user", JSON.stringify(data.user))
+          }
         }
         showFeedback("success", "Login Berhasil", "Selamat datang kembali.")
         setTimeout(() => { window.location.href = "/" }, 1200)
@@ -61,7 +83,6 @@ export default function LoginPage() {
         <Link href="/" className="inline-flex justify-center">
           <AppLogo alt="Logo" className="h-10 w-auto" priority />
         </Link>
-        <h1 className="mt-4 text-xl font-bold text-foreground">Sign In</h1>
       </header>
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -101,6 +122,16 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 rounded border-emerald-500/60"
+          />
+          Remember me
+        </label>
 
         <button
           type="submit"

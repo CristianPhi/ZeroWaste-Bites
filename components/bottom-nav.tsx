@@ -1,13 +1,13 @@
 "use client"
 
-import { Compass, Home, Receipt, User } from "lucide-react"
+import { Home, Receipt, Search, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   { label: "Feed", icon: Home, href: "/" },
-  { label: "Discover", icon: Compass, href: "/browse" },
+  { label: "Search", icon: Search, href: "/browse" },
   { label: "Claims", icon: Receipt, href: "/orders" },
   { label: "Profile", icon: User, href: "/profile" },
 ]

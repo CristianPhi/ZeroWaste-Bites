@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, GraduationCap, Leaf, MapPin, Search } from "lucide-react"
+import { Bell, GraduationCap, Leaf, MapPin } from "lucide-react"
 import { dealPosts } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
@@ -34,13 +34,6 @@ export function HomeContent() {
             <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
           </Link>
           <div className="flex items-center gap-2">
-            <Link
-              href="/browse"
-              className="rounded-full bg-secondary p-2 text-foreground transition-colors hover:bg-secondary/80"
-              aria-label="Search"
-            >
-              <Search className="h-4.5 w-4.5" />
-            </Link>
             <button
               className="relative rounded-full bg-secondary p-2 text-foreground transition-colors hover:bg-secondary/80"
               aria-label="Notifications"
@@ -50,7 +43,6 @@ export function HomeContent() {
             </button>
           </div>
         </div>
-        <h1 className="mt-1 pb-1 text-center text-lg font-semibold tracking-tight text-foreground">Feed</h1>
 
         {/* Category tabs */}
         <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-1">

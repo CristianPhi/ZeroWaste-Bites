@@ -29,8 +29,10 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<{ id: string; name: string; email: string } | null>(() => {
     if (typeof window === "undefined") return null
     try {
-      const raw = localStorage.getItem("user")
-      return raw ? JSON.parse(raw) : null
+      const rawLocal = localStorage.getItem("user")
+      if (rawLocal) return JSON.parse(rawLocal)
+      const rawSession = sessionStorage.getItem("user")
+      return rawSession ? JSON.parse(rawSession) : null
     } catch {
       return null
     }
@@ -46,8 +48,19 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      if (user) localStorage.setItem("user", JSON.stringify(user))
-      else localStorage.removeItem("user")
+      if (user) {
+        const rememberMe = localStorage.getItem("rememberMe") === "true"
+        if (rememberMe) {
+          localStorage.setItem("user", JSON.stringify(user))
+          sessionStorage.removeItem("user")
+        } else {
+          sessionStorage.setItem("user", JSON.stringify(user))
+          localStorage.removeItem("user")
+        }
+      } else {
+        localStorage.removeItem("user")
+        sessionStorage.removeItem("user")
+      }
     } catch {
       // ignore
     }

@@ -72,7 +72,6 @@ export default function RegisterPage() {
         <Link href="/" aria-label="Go to Feed" className="inline-flex justify-center">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
-        <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Register</h1>
       </header>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col text-sm">

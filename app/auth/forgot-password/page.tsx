@@ -148,7 +148,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="mx-auto w-full max-w-md px-4 py-12">
-      <h1 className="text-xl font-bold text-foreground">Forgot Password</h1>
       <p className="mt-2 text-sm text-muted-foreground">Reset password akun kamu lewat OTP yang dikirim ke email.</p>
 
       {step === 1 ? (

@@ -53,7 +53,6 @@ export default function FavoriteStoresPage() {
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
-        <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Favorite Stores</h1>
       </header>
       {favStores.length === 0 ? (
         <div className="rounded-lg border p-6 text-center">

@@ -6,10 +6,8 @@ import {
   ChevronRight,
   GraduationCap,
   Heart,
-  HelpCircle,
   Leaf,
   LogOut,
-  MapPin,
   Settings,
   Store,
   User,
@@ -25,10 +23,10 @@ import { useRouter } from "next/navigation"
 import { AppLogo } from "@/components/app-logo"
 
 const menuItems = [
-  { icon: Heart, label: "Saved Deals", description: "Deals you liked" },
-  { icon: Store, label: "Favorite Stores", description: "Stores you follow" },
-  { icon: Settings, label: "Settings", description: "App preferences" },
-  { icon: HelpCircle, label: "Help & FAQ", description: "Get support" },
+  { icon: Heart, label: "Saved Deals", description: "Deals you liked", href: "/saved-deals" },
+  { icon: Store, label: "Favorite Stores", description: "Stores you follow", href: "/favorite-stores" },
+  { icon: Settings, label: "Settings", description: "Theme and app preferences", href: "/settings" },
+  { label: "About Us", description: "About ZeroWaste Bites", href: "/about" },
 ]
 
 export function ProfileContent() {
@@ -96,7 +94,6 @@ export function ProfileContent() {
         <Link href="/" aria-label="Go to Feed">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
-        <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Profile</h1>
       </header>
 
       {/* Profile Header */}
@@ -209,59 +206,27 @@ export function ProfileContent() {
       <div className="flex flex-col overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border/50">
         {menuItems.map((item, i) => {
           const isLast = i === menuItems.length - 1
-          // Link Saved Deals and Favorite Stores to new pages
-          if (item.label === "Saved Deals") {
-            return (
-              <Link
-                key={item.label}
-                href="/saved-deals"
-                className={`flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-secondary/50 ${
-                  !isLast ? "border-b border-border" : ""
-                }`}
-              >
-                <item.icon className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{item.description}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            )
-          }
-
-          if (item.label === "Favorite Stores") {
-            return (
-              <Link
-                key={item.label}
-                href="/favorite-stores"
-                className={`flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-secondary/50 ${
-                  !isLast ? "border-b border-border" : ""
-                }`}
-              >
-                <item.icon className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{item.description}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            )
-          }
-
           return (
-            <button
+            <Link
               key={item.label}
+              href={item.href}
               className={`flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-secondary/50 ${
                 !isLast ? "border-b border-border" : ""
               }`}
             >
-              <item.icon className="h-4 w-4 text-muted-foreground" />
+              {item.label === "About Us" ? (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border border-muted-foreground text-[11px] font-semibold text-muted-foreground">
+                  i
+                </span>
+              ) : (
+                item.icon && <item.icon className="h-4 w-4 text-muted-foreground" />
+              )}
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">{item.label}</p>
                 <p className="text-[11px] text-muted-foreground">{item.description}</p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
+            </Link>
           )
         })}
       </div>
@@ -287,6 +252,8 @@ export function ProfileContent() {
                   localStorage.removeItem(key)
                 }
               }
+              localStorage.removeItem('rememberMe')
+              sessionStorage.removeItem('user')
             } catch {
               // ignore
             }
