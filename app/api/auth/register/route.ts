@@ -82,6 +82,22 @@ export async function POST(req: Request) {
           createdAt: new Date(),
         });
 
+        if (normalizedRole === "store_owner") {
+          await db.collection("store_owners").updateOne(
+            { email: normalizedEmail },
+            {
+              $set: {
+                email: normalizedEmail,
+                username: normalizedUsername,
+                ownerName: name,
+                phone: p,
+                createdAt: new Date(),
+              },
+            },
+            { upsert: true }
+          )
+        }
+
         return NextResponse.json({ ok: true });
       } catch (mongoErr: any) {
         if (isProduction) {

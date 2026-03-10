@@ -9,7 +9,36 @@ import { AppLogo } from "@/components/app-logo"
 
 export default function FavoriteStoresPage() {
   const [favIds, setFavIds] = useState<string[]>([])
+  const [uploadedStoreMap, setUploadedStoreMap] = useState<Record<string, any>>({})
   const { user } = useStudent()
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch("/api/deals")
+        if (!res.ok) return
+        const data = await res.json()
+        const map: Record<string, any> = {}
+        if (Array.isArray(data.deals)) {
+          for (const d of data.deals) {
+            const key = `store-${String(d.ownerEmail || "unknown")}`
+            if (!map[key]) {
+              map[key] = {
+                id: key,
+                name: String(d.storeName || d.ownerName || "Store Owner"),
+                avatar: String(d.storeAvatar || "/images/store-1.jpg"),
+                address: "Uploaded by store owner",
+                rating: 4.7,
+              }
+            }
+          }
+        }
+        setUploadedStoreMap(map)
+      } catch {
+        setUploadedStoreMap({})
+      }
+    })()
+  }, [])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -45,7 +74,9 @@ export default function FavoriteStoresPage() {
     } catch {}
   }
 
-  const favStores = favIds.map((id) => stores.find((s) => s.id === id)).filter(Boolean)
+  const staticMap = Object.fromEntries(stores.map((s) => [s.id, s]))
+  const allMap = { ...uploadedStoreMap, ...staticMap }
+  const favStores = favIds.map((id) => allMap[id]).filter(Boolean)
 
   return (
     <main className="w-full px-4 py-8">

@@ -14,11 +14,10 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
-import { dealPosts, formatPrice } from "@/lib/data"
+import { useEffect, useState } from "react"
+import { formatPrice } from "@/lib/data"
 import { AppLogo } from "@/components/app-logo"
-
-const storePosts = dealPosts.filter((f) => f.store.id === "holland-bakery")
+import { useStudent } from "@/lib/student-context"
 
 interface PostItem {
   id: string
@@ -34,25 +33,16 @@ interface PostItem {
 }
 
 export function AdminDashboard() {
+  const { user } = useStudent()
+  const [storeName, setStoreName] = useState("")
   const [itemName, setItemName] = useState("")
   const [photoUrl, setPhotoUrl] = useState("")
   const [originalPriceInput, setOriginalPriceInput] = useState("")
   const [discountInput, setDiscountInput] = useState("50")
   const [quantityInput, setQuantityInput] = useState("1")
-  const [posts, setPosts] = useState<PostItem[]>(
-    storePosts.map((p) => ({
-      id: p.id,
-      itemName: p.itemName,
-      image: p.image,
-      originalPrice: p.originalPrice,
-      discountedPrice: p.discountedPrice,
-      discountPercent: p.discountPercent,
-      quantity: p.quantity,
-      claimed: p.claimed,
-      active: true,
-      expiresAt: p.expiresAt,
-    }))
-  )
+  const [category, setCategory] = useState("Meals")
+  const [posts, setPosts] = useState<PostItem[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const togglePost = (id: string) => {
     setPosts((prev) =>
@@ -67,8 +57,41 @@ export function AdminDashboard() {
     0
   )
 
-  const handleUploadDeal = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!user?.email) return
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/deals?ownerEmail=${encodeURIComponent(user.email)}`)
+        const data = await res.json()
+        if (!res.ok) return
+
+        const nextPosts: PostItem[] = Array.isArray(data.deals)
+          ? data.deals.map((p: any) => ({
+              id: String(p.id),
+              itemName: String(p.itemName || "Untitled"),
+              image: String(p.image || "/images/store-1.jpg"),
+              originalPrice: Number(p.originalPrice || 0),
+              discountedPrice: Number(p.discountedPrice || 0),
+              discountPercent: Number(p.discountPercent || 0),
+              quantity: Number(p.quantity || 0),
+              claimed: Number(p.claimed || 0),
+              active: String(p.status || "active") === "active",
+              expiresAt: String(p.expiresAt || "Tonight, 10 PM"),
+            }))
+          : []
+
+        setPosts(nextPosts)
+      } catch {
+        // ignore
+      }
+    })()
+  }, [user?.email])
+
+  const handleUploadDeal = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!user?.email) return
 
     const originalPrice = Number(originalPriceInput)
     const discountPercent = Math.max(1, Math.min(95, Number(discountInput)))
@@ -76,27 +99,52 @@ export function AdminDashboard() {
 
     if (!itemName || !photoUrl || !originalPrice || !discountPercent || !quantity) return
 
-    const discountedPrice = Math.max(1000, Math.round(originalPrice * (1 - discountPercent / 100)))
+    setUploading(true)
+    try {
+      const res = await fetch("/api/deals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerEmail: user.email,
+          ownerName: user.name,
+          ownerUsername: user.username,
+          storeName: storeName.trim() || user.name,
+          itemName,
+          image: photoUrl,
+          originalPrice,
+          discountPercent,
+          quantity,
+          category,
+          expiresAt: "Tonight, 10 PM",
+        }),
+      })
 
-    const newPost: PostItem = {
-      id: `custom-${Date.now()}`,
-      itemName,
-      image: photoUrl,
-      originalPrice,
-      discountedPrice,
-      discountPercent,
-      quantity,
-      claimed: 0,
-      active: true,
-      expiresAt: "Tonight, 10 PM",
+      const data = await res.json()
+      if (!res.ok || !data?.deal) return
+
+      const created = data.deal
+      const newPost: PostItem = {
+        id: String(created.id),
+        itemName: String(created.itemName),
+        image: String(created.image),
+        originalPrice: Number(created.originalPrice),
+        discountedPrice: Number(created.discountedPrice),
+        discountPercent: Number(created.discountPercent),
+        quantity: Number(created.quantity),
+        claimed: Number(created.claimed || 0),
+        active: String(created.status || "active") === "active",
+        expiresAt: String(created.expiresAt || "Tonight, 10 PM"),
+      }
+
+      setPosts((prev) => [newPost, ...prev])
+      setItemName("")
+      setPhotoUrl("")
+      setOriginalPriceInput("")
+      setDiscountInput("50")
+      setQuantityInput("1")
+    } finally {
+      setUploading(false)
     }
-
-    setPosts((prev) => [newPost, ...prev])
-    setItemName("")
-    setPhotoUrl("")
-    setOriginalPriceInput("")
-    setDiscountInput("50")
-    setQuantityInput("1")
   }
 
   return (
@@ -178,6 +226,17 @@ export function AdminDashboard() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="text-xs text-muted-foreground">
+            Store name
+            <input
+              type="text"
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              placeholder="Nama toko kamu"
+            />
+          </label>
+
+          <label className="text-xs text-muted-foreground">
             Food name
             <input
               type="text"
@@ -238,14 +297,29 @@ export function AdminDashboard() {
               required
             />
           </label>
+
+          <label className="text-xs text-muted-foreground md:col-span-2">
+            Category
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            >
+              <option value="Meals">Meals</option>
+              <option value="Bakery">Bakery</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Drinks">Drinks</option>
+            </select>
+          </label>
         </div>
 
         <button
           type="submit"
+          disabled={uploading}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
-          Upload Deal
+          {uploading ? "Uploading..." : "Upload Deal"}
         </button>
       </form>
 
@@ -256,7 +330,7 @@ export function AdminDashboard() {
           Manage your active and expired deal listings
         </p>
 
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           {posts.map((post) => (
             <div
               key={post.id}
