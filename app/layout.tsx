@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Space_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
+import { AuthAestheticBg } from '@/components/auth-aesthetic-bg'
 import './globals.css'
 
 const _dmSans = DM_Sans({ subsets: ["latin"], variable: '--font-dm-sans' });
@@ -98,6 +99,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
+        <AuthAestheticBg />
         <Providers>
           {children}
         </Providers>
