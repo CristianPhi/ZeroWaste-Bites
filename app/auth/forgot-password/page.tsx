@@ -30,6 +30,8 @@ export default function ForgotPasswordPage() {
   };
 
   const emailLocked = Boolean(email);
+  const inputClass =
+    "w-full rounded-md border-2 border-emerald-600/35 bg-background/65 px-3 py-2 text-foreground dark:border-emerald-300/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40";
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -53,7 +55,7 @@ export default function ForgotPasswordPage() {
       setLoading(false);
 
       if (!res.ok) {
-        showFeedback("error", "Gagal", data.error || "Gagal mengirim OTP");
+        showFeedback("error", "Gagal", data?.detail ? `${data.error || "Gagal mengirim OTP"} (${data.detail})` : data.error || "Gagal mengirim OTP");
         return;
       }
 
@@ -95,7 +97,7 @@ export default function ForgotPasswordPage() {
       setLoading(false);
 
       if (!res.ok) {
-        showFeedback("error", "Gagal", data.error || "Gagal mengirim OTP ulang");
+        showFeedback("error", "Gagal", data?.detail ? `${data.error || "Gagal mengirim OTP ulang"} (${data.detail})` : data.error || "Gagal mengirim OTP ulang");
         return;
       }
 
@@ -158,7 +160,7 @@ export default function ForgotPasswordPage() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
-              className="w-full rounded-md border px-3 py-2"
+              className={inputClass}
               placeholder="email atau username"
             />
           </label>
@@ -181,7 +183,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               readOnly={emailLocked}
-              className={`w-full rounded-md border px-3 py-2 ${emailLocked ? "bg-muted/40 text-muted-foreground" : ""}`}
+              className={`${inputClass} ${emailLocked ? "bg-muted/40 text-muted-foreground" : ""}`}
               placeholder="nama@email.com"
             />
             {emailLocked ? (
@@ -196,7 +198,7 @@ export default function ForgotPasswordPage() {
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               required
-              className="w-full rounded-md border px-3 py-2"
+              className={inputClass}
               placeholder="6 digit OTP"
             />
           </label>
@@ -223,7 +225,7 @@ export default function ForgotPasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                className="w-full rounded-md border px-3 py-2 pr-10"
+                className={`${inputClass} pr-10`}
               />
               <button
                 type="button"
@@ -244,7 +246,7 @@ export default function ForgotPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-md border px-3 py-2 pr-10"
+                className={`${inputClass} pr-10`}
               />
               <button
                 type="button"
