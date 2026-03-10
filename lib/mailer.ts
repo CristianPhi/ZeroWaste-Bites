@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-const senderEmail = process.env.GMAIL_SENDER || "philandercristian@gmail.com";
+const senderEmail = process.env.GMAIL_SENDER || "cristian.philander06@gmail.com";
 
 export async function sendResetOtpEmail(to: string, otp: string) {
   const appPassword = process.env.GMAIL_APP_PASSWORD;
