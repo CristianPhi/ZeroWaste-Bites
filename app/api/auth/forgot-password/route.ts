@@ -74,9 +74,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // Return a generic success response to avoid account enumeration.
     if (!targetEmail) {
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ error: "Akun dengan email/username ini tidak ditemukan" }, { status: 404 });
     }
 
     const code = randomOtp();
@@ -106,12 +105,12 @@ export async function POST(req: Request) {
         );
       }
 
-      return NextResponse.json({ ok: true, devOtp: code, email: targetEmail, devMode: true });
+      return NextResponse.json({ ok: true, devOtp: code, email: targetEmail, devMode: true, resendAfterSeconds: 60 });
     }
 
     await sendResetOtpEmail(targetEmail, code);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, email: targetEmail, resendAfterSeconds: 60 });
   } catch (err: any) {
     const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
     if (!isProduction) {

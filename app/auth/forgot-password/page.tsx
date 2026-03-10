@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthFeedbackModal } from "@/components/auth-feedback-modal";
@@ -15,6 +15,7 @@ export default function ForgotPasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<"success" | "error">("success");
@@ -29,6 +30,14 @@ export default function ForgotPasswordPage() {
   };
 
   const emailLocked = Boolean(email);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const requestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +69,41 @@ export default function ForgotPasswordPage() {
       } else {
         showFeedback("success", "OTP Terkirim", "Cek email kamu untuk kode reset password.");
       }
+      setResendCooldown(Number(data.resendAfterSeconds || 60));
+    } catch {
+      setLoading(false);
+      showFeedback("error", "Server Error", "Gagal terhubung ke server.");
+    }
+  };
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    const activeIdentifier = identifier || email;
+    if (!activeIdentifier) {
+      showFeedback("error", "Data Kurang", "Isi email atau username terlebih dahulu.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: activeIdentifier }),
+      });
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok) {
+        showFeedback("error", "Gagal", data.error || "Gagal mengirim OTP ulang");
+        return;
+      }
+
+      if (data.email) {
+        setEmail(String(data.email));
+      }
+      setResendCooldown(Number(data.resendAfterSeconds || 60));
+      showFeedback("success", "OTP Dikirim Ulang", "Silakan cek email kamu.");
     } catch {
       setLoading(false);
       showFeedback("error", "Server Error", "Gagal terhubung ke server.");
@@ -156,6 +200,20 @@ export default function ForgotPasswordPage() {
               placeholder="6 digit OTP"
             />
           </label>
+
+          <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              {resendCooldown > 0 ? `Kirim ulang OTP dalam ${resendCooldown} detik` : "Tidak menerima OTP?"}
+            </span>
+            <button
+              type="button"
+              onClick={resendOtp}
+              disabled={resendCooldown > 0 || loading}
+              className="text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Resend OTP
+            </button>
+          </div>
 
           <label className="block text-sm">
             <span className="mb-1 block text-xs text-muted-foreground">Password baru</span>

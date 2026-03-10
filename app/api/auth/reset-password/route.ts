@@ -47,6 +47,15 @@ export async function POST(req: Request) {
       const mongo = await connectMongo();
       client = mongo.client;
       const usersCol = mongo.db.collection("users");
+
+      const user = await usersCol.findOne({ email });
+      if (!user) {
+        return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+      }
+      if (String(user.password || "") === newPassword) {
+        return NextResponse.json({ error: "Password baru tidak boleh sama dengan password lama" }, { status: 400 });
+      }
+
       const result = await usersCol.updateOne({ email }, { $set: { password: newPassword } });
       if (!result.matchedCount) {
         return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
@@ -56,6 +65,9 @@ export async function POST(req: Request) {
       const idx = users.findIndex((u) => String(u.email).trim().toLowerCase() === email);
       if (idx < 0) {
         return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+      }
+      if (String(users[idx].password || "") === newPassword) {
+        return NextResponse.json({ error: "Password baru tidak boleh sama dengan password lama" }, { status: 400 });
       }
       users[idx].password = newPassword;
       await writeJsonFile("users.json", users);
