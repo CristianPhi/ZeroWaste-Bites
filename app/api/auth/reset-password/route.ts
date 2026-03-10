@@ -20,6 +20,7 @@ type UserRecord = {
 
 export async function POST(req: Request) {
   let client;
+  let db: any;
   try {
     const body = await req.json();
     const email = String(body?.email || "").trim().toLowerCase();
@@ -30,23 +31,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email, kode OTP, dan password baru wajib diisi" }, { status: 400 });
     }
 
-    const otps = await readJsonFile<OtpRecord[]>("otps.json", []);
-    const otp = otps.find(
-      (o) =>
-        o.email === email &&
-        o.code === code &&
-        o.purpose === "reset-password" &&
-        new Date(o.expiresAt).getTime() > Date.now()
-    );
+    let otp: OtpRecord | null = null;
+    if (hasMongoConfig()) {
+      const mongo = await connectMongo();
+      client = mongo.client;
+      db = mongo.db;
+
+      const foundOtp = await db.collection("otps").findOne({
+        email,
+        code,
+        purpose: "reset-password",
+        expiresAt: { $gt: new Date().toISOString() },
+      });
+
+      if (foundOtp) {
+        otp = {
+          email: foundOtp.email,
+          code: foundOtp.code,
+          purpose: foundOtp.purpose,
+          expiresAt: foundOtp.expiresAt,
+          createdAt: foundOtp.createdAt,
+        };
+      }
+    } else {
+      const otps = await readJsonFile<OtpRecord[]>("otps.json", []);
+      otp =
+        otps.find(
+          (o) =>
+            o.email === email &&
+            o.code === code &&
+            o.purpose === "reset-password" &&
+            new Date(o.expiresAt).getTime() > Date.now()
+        ) ?? null;
+    }
 
     if (!otp) {
       return NextResponse.json({ error: "Kode OTP tidak valid atau sudah kadaluarsa" }, { status: 400 });
     }
 
-    if (hasMongoConfig()) {
-      const mongo = await connectMongo();
-      client = mongo.client;
-      const usersCol = mongo.db.collection("users");
+    if (hasMongoConfig() && db) {
+      const usersCol = db.collection("users");
 
       const user = await usersCol.findOne({ email });
       if (!user) {
@@ -60,6 +84,12 @@ export async function POST(req: Request) {
       if (!result.matchedCount) {
         return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
       }
+
+      await db.collection("otps").deleteMany({
+        email,
+        code,
+        purpose: "reset-password",
+      });
     } else {
       const users = await readJsonFile<UserRecord[]>("users.json", []);
       const idx = users.findIndex((u) => String(u.email).trim().toLowerCase() === email);
@@ -71,10 +101,11 @@ export async function POST(req: Request) {
       }
       users[idx].password = newPassword;
       await writeJsonFile("users.json", users);
-    }
 
-    const nextOtps = otps.filter((o) => !(o.email === email && o.purpose === "reset-password"));
-    await writeJsonFile("otps.json", nextOtps);
+      const otps = await readJsonFile<OtpRecord[]>("otps.json", []);
+      const nextOtps = otps.filter((o) => !(o.email === email && o.purpose === "reset-password"));
+      await writeJsonFile("otps.json", nextOtps);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

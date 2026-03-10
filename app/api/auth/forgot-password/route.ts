@@ -29,6 +29,7 @@ function randomOtp() {
 
 export async function POST(req: Request) {
   let client;
+  let db: any;
   try {
     const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
     const body = await req.json();
@@ -43,7 +44,8 @@ export async function POST(req: Request) {
     if (hasMongoConfig()) {
       const mongo = await connectMongo();
       client = mongo.client;
-      const usersCol = mongo.db.collection("users");
+      db = mongo.db;
+      const usersCol = db.collection("users");
 
       const user = await usersCol.findOne(
         identifier.includes("@")
@@ -81,20 +83,39 @@ export async function POST(req: Request) {
     const code = randomOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    const otps = await readJsonFile<OtpRecord[]>("otps.json", []);
-    const nextOtps = otps
-      .filter((o) => !(o.email === targetEmail && o.purpose === "reset-password"))
-      .filter((o) => new Date(o.expiresAt).getTime() > Date.now());
+    if (hasMongoConfig() && db) {
+      const otpCol = db.collection("otps");
+      await otpCol.deleteMany({ email: targetEmail, purpose: "reset-password" });
+      await otpCol.insertOne({
+        email: targetEmail,
+        code,
+        purpose: "reset-password",
+        expiresAt,
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      if (isProduction) {
+        return NextResponse.json(
+          { error: "OTP storage belum dikonfigurasi. Hubungkan MongoDB untuk production." },
+          { status: 503 }
+        );
+      }
 
-    nextOtps.push({
-      email: targetEmail,
-      code,
-      purpose: "reset-password",
-      expiresAt,
-      createdAt: new Date().toISOString(),
-    });
+      const otps = await readJsonFile<OtpRecord[]>("otps.json", []);
+      const nextOtps = otps
+        .filter((o) => !(o.email === targetEmail && o.purpose === "reset-password"))
+        .filter((o) => new Date(o.expiresAt).getTime() > Date.now());
 
-    await writeJsonFile("otps.json", nextOtps);
+      nextOtps.push({
+        email: targetEmail,
+        code,
+        purpose: "reset-password",
+        expiresAt,
+        createdAt: new Date().toISOString(),
+      });
+
+      await writeJsonFile("otps.json", nextOtps);
+    }
 
     const hasGmailConfig = Boolean(process.env.GMAIL_APP_PASSWORD?.trim());
     if (!hasGmailConfig) {
