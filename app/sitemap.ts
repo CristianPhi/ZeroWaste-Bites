@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://zerowastebites-rust.vercel.app'
-  
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zerowastebites-rust.vercel.app'
+
   return [
     {
       url: baseUrl,
@@ -22,6 +22,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
-    // Tambahkan halaman lain jika ada, misalnya /dashboard
   ]
 }
