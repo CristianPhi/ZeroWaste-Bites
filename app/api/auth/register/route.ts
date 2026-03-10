@@ -8,10 +8,15 @@ type UserRecord = {
   id: string;
   name: string;
   email: string;
+  username?: string;
   password: string;
   phone?: string;
   createdAt?: string | Date;
 };
+
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "");
+}
 
 export async function POST(req: Request) {
   let client;
@@ -19,13 +24,18 @@ export async function POST(req: Request) {
     const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
     const body = await req.json();
-    const { name, email, password, phone } = body || {};
+    const { name, email, username, password, phone } = body || {};
 
-    if (!name || !email || !password || !phone) {
+    if (!name || !email || !password || !phone || !username) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedUsername = normalizeUsername(String(username));
+
+    if (normalizedUsername.length < 3) {
+      return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
+    }
 
     if (!hasMongoConfig() && isProduction) {
       return NextResponse.json(
@@ -47,15 +57,18 @@ export async function POST(req: Request) {
         const db = mongo.db;
         const usersCol = db.collection("users");
 
-        const existingUser = await usersCol.findOne({ email: normalizedEmail });
+        const existingUser = await usersCol.findOne({
+          $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
+        });
         if (existingUser) {
-          return NextResponse.json({ error: "Email exists" }, { status: 409 });
+          return NextResponse.json({ error: "Email atau username sudah dipakai" }, { status: 409 });
         }
 
         await usersCol.insertOne({
           id: `user_${Date.now()}`,
           name,
           email: normalizedEmail,
+          username: normalizedUsername,
           password,
           phone: p,
           createdAt: new Date(),
@@ -81,15 +94,20 @@ export async function POST(req: Request) {
     }
 
     const users = await readJsonFile<UserRecord[]>("users.json", []);
-    const exists = users.some((u) => String(u.email).trim().toLowerCase() === normalizedEmail);
+    const exists = users.some(
+      (u) =>
+        String(u.email).trim().toLowerCase() === normalizedEmail ||
+        normalizeUsername(String(u.username || "")) === normalizedUsername
+    );
     if (exists) {
-      return NextResponse.json({ error: "Email exists" }, { status: 409 });
+      return NextResponse.json({ error: "Email atau username sudah dipakai" }, { status: 409 });
     }
 
     users.push({
       id: `user_${Date.now()}`,
       name,
       email: normalizedEmail,
+      username: normalizedUsername,
       password,
       phone: p,
       createdAt: new Date().toISOString(),

@@ -3,11 +3,13 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { Eye, EyeOff } from "lucide-react"
 import { AuthFeedbackModal } from "@/components/auth-feedback-modal"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackType, setFeedbackType] = useState<"success" | "error">("success")
@@ -29,7 +31,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       })
 
       const data = await res.json()
@@ -61,27 +63,40 @@ export default function LoginPage() {
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">Email</span>
+          <span className="text-sm font-medium text-muted-foreground">Email atau Username</span>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
             className="rounded-md border border-border bg-background p-2 text-foreground placeholder:text-muted-foreground"
-            placeholder="nama@email.com"
+            placeholder="nama@email.com atau username"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-muted-foreground">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="rounded-md border border-border bg-background p-2 text-foreground placeholder:text-muted-foreground"
-            placeholder="Masukkan password"
-          />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Password</span>
+            <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">Lupa password?</Link>
+          </div>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-md border border-border bg-background p-2 pr-10 text-foreground placeholder:text-muted-foreground"
+              placeholder="Masukkan password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         <button

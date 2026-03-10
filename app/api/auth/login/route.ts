@@ -8,10 +8,20 @@ type UserRecord = {
   id: string;
   name: string;
   email: string;
+  username?: string;
   password: string;
   phone?: string;
   createdAt?: string | Date;
 };
+
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function emailLocalPart(email: string) {
+  const idx = email.indexOf("@");
+  return idx > 0 ? email.slice(0, idx).toLowerCase() : "";
+}
 
 export async function POST(req: Request) {
   let client;
@@ -19,13 +29,15 @@ export async function POST(req: Request) {
     const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
     const body = await req.json();
-    const { email, password } = body;
+    const { email, identifier, password } = body;
+    const loginId = String(identifier || email || "").trim();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
+    if (!loginId || !password) {
+      return NextResponse.json({ error: "Email/username dan password wajib diisi" }, { status: 400 });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedLoginId = loginId.toLowerCase();
+    const isEmailLogin = normalizedLoginId.includes("@");
 
     if (!hasMongoConfig() && isProduction) {
       return NextResponse.json(
@@ -42,9 +54,19 @@ export async function POST(req: Request) {
         const db = mongo.db;
         const usersCol = db.collection("users");
 
-        const user = await usersCol.findOne({ email: normalizedEmail, password });
+        const user = await usersCol.findOne(
+          isEmailLogin
+            ? { email: normalizedLoginId, password }
+            : {
+                password,
+                $or: [
+                  { username: normalizeUsername(normalizedLoginId) },
+                  { email: { $regex: `^${normalizedLoginId}@`, $options: "i" } },
+                ],
+              }
+        );
         if (!user) {
-          return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
+          return NextResponse.json({ error: "Email/username atau password salah" }, { status: 401 });
         }
 
         const { password: _p, ...userWithoutPassword } = user;
@@ -61,12 +83,16 @@ export async function POST(req: Request) {
     }
 
     const users = await readJsonFile<UserRecord[]>("users.json", []);
-    const user = users.find(
-      (u) => String(u.email).trim().toLowerCase() === normalizedEmail && u.password === password
-    );
+    const user = users.find((u) => {
+      if (u.password !== password) return false;
+      const emailMatch = String(u.email).trim().toLowerCase() === normalizedLoginId;
+      const usernameMatch = normalizeUsername(String(u.username || "")) === normalizeUsername(normalizedLoginId);
+      const localPartMatch = emailLocalPart(String(u.email).trim().toLowerCase()) === normalizeUsername(normalizedLoginId);
+      return isEmailLogin ? emailMatch : usernameMatch || localPartMatch;
+    });
 
     if (!user) {
-      return NextResponse.json({ error: "Email atau password salah" }, { status: 401 });
+      return NextResponse.json({ error: "Email/username atau password salah" }, { status: 401 });
     }
 
     const { password: _p, ...userWithoutPassword } = user;

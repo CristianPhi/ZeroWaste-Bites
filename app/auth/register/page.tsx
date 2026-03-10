@@ -10,6 +10,7 @@ import { AuthFeedbackModal } from "@/components/auth-feedback-modal"
 export default function RegisterPage() {
   const router = useRouter()
   const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
@@ -42,7 +43,7 @@ export default function RegisterPage() {
         const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, phone }),
+        body: JSON.stringify({ name, username, email, password, phone }),
       })
       const data = await res.json()
       setLoading(false)
@@ -79,6 +80,18 @@ export default function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
               required
               className="rounded-md border px-3 py-2"
+            />
+          </label>
+
+          <label className="flex flex-col text-sm">
+            <span className="mb-1 text-xs text-muted-foreground">Username</span>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="rounded-md border px-3 py-2"
+              placeholder="contoh: cristianp"
             />
           </label>
 
