@@ -28,6 +28,8 @@ export default function ForgotPasswordPage() {
     setFeedbackOpen(true);
   };
 
+  const emailLocked = Boolean(email);
+
   const requestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -106,7 +108,7 @@ export default function ForgotPasswordPage() {
       {step === 1 ? (
         <form onSubmit={requestOtp} className="mt-6 space-y-4">
           <label className="block text-sm">
-            <span className="mb-1 block text-xs text-mu            git add app/api/auth/forgot-password/route.ts app/auth/forgot-password/page.tsx; git commit -m "Handle forgot-password gracefully without Gmail config in dev"; git push origin mainted-foreground">Email atau Username</span>
+            <span className="mb-1 block text-xs text-muted-foreground">Email atau Username</span>
             <input
               type="text"
               value={identifier}
@@ -134,9 +136,13 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-md border px-3 py-2"
+              readOnly={emailLocked}
+              className={`w-full rounded-md border px-3 py-2 ${emailLocked ? "bg-muted/40 text-muted-foreground" : ""}`}
               placeholder="nama@email.com"
             />
+            {emailLocked ? (
+              <span className="mt-1 block text-xs text-muted-foreground">Email terisi otomatis dari langkah sebelumnya.</span>
+            ) : null}
           </label>
 
           <label className="block text-sm">
