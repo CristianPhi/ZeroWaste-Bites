@@ -31,7 +31,10 @@ export default function RegisterPage() {
       }
 
       // after register, navigate to login with email prefilled
-      router.push(`/auth/login?email=${encodeURIComponent(email)}`)
+      toast({ title: "Register Berhasil", description: "Akun berhasil dibuat.", variant: "default" })
+      setTimeout(() => {
+        router.push(`/auth/login?email=${encodeURIComponent(email)}`)
+      }, 1200)
     } catch (err) {
       setLoading(false)
       toast({ title: "Server Error", description: "Registration error", variant: "destructive" })
