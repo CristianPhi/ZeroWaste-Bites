@@ -20,6 +20,17 @@
       "totalAmount": 10698,
       "status": "pending",
       "createdAt": "2026-03-05T13:52:04.004Z"
+    },
+    {
+      "id": "pay_mmjayud4_8ujk58",
+      "dealId": "deal-1",
+      "method": "qris",
+      "baseAmount": 7500,
+      "uniqueCode": 289,
+      "totalAmount": 7789,
+      "status": "success",
+      "createdAt": "2026-03-09T14:55:00.664Z",
+      "paidAt": "2026-03-09T14:55:09.321Z"
     }
   ]
 }

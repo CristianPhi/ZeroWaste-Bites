@@ -55,7 +55,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-md border p-2 text-black"
+            className="rounded-md border border-border bg-background p-2 text-foreground placeholder:text-muted-foreground"
             placeholder="nama@email.com"
           />
         </div>
@@ -67,7 +67,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="rounded-md border p-2 text-black"
+            className="rounded-md border border-border bg-background p-2 text-foreground placeholder:text-muted-foreground"
             placeholder="Masukkan password"
           />
         </div>
@@ -75,14 +75,14 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 rounded-md bg-green-600 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+          className="mt-2 rounded-md bg-primary py-2 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {loading ? "Sabar ya..." : "Login"}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm">
-        Belum punya akun? <Link href="/auth/register" className="text-green-600 font-bold">Daftar Sekarang</Link>
+        Belum punya akun? <Link href="/auth/register" className="font-bold text-primary">Daftar Sekarang</Link>
       </p>
     </div>
   )

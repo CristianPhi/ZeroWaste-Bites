@@ -122,4 +122,16 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  button {
+    @apply transition-transform duration-200 ease-out;
+  }
+
+  button:not(:disabled):hover {
+    @apply scale-[1.01];
+  }
+
+  button:not(:disabled):active {
+    @apply scale-95;
+  }
 }

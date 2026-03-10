@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Clock, GraduationCap, Heart, MapPin, ShieldCheck } from "lucide-react"
 import { type DealPost, formatPrice } from "@/lib/data"
 import { useStudent, getStudentPrice } from "@/lib/student-context"
@@ -10,11 +11,25 @@ import { getFavorites, addFavorite, removeFavorite } from "@/lib/favorites"
 
 export function DealPostCard({ post }: { post: DealPost }) {
   const [liked, setLiked] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const { isVerified } = useStudent()
+  const router = useRouter()
   const studentPrice = getStudentPrice(post.discountedPrice)
   const totalStudentDiscount = Math.round(
     ((post.originalPrice - studentPrice) / post.originalPrice) * 100
   )
+
+  const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Preserve default browser behavior for new tab/window interactions.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    e.preventDefault()
+    if (isNavigating) return
+
+    setIsNavigating(true)
+    window.setTimeout(() => {
+      router.push(`/deal/${post.id}`)
+    }, 240)
+  }
 
   const handleLike = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -63,7 +78,7 @@ export function DealPostCard({ post }: { post: DealPost }) {
   }, [post.id])
 
   return (
-    <Link href={`/deal/${post.id}`} className="block bg-card">
+    <Link href={`/deal/${post.id}`} onClick={handleCardClick} className="group block bg-card">
       {/* Compact store header */}
       <div className="flex items-center gap-2 px-4 py-2">
         <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-primary/20">
@@ -95,7 +110,9 @@ export function DealPostCard({ post }: { post: DealPost }) {
           src={post.image}
           alt={post.itemName}
           fill
-          className="object-cover"
+          className={`object-cover transition-transform duration-700 ease-out ${
+            isNavigating ? "scale-110" : "group-hover:scale-105 group-active:scale-110"
+          }`}
           sizes="(max-width: 448px) 100vw, 448px"
         />
         {/* Expiry pill */}
