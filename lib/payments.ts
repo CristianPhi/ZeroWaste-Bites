@@ -1,4 +1,5 @@
 import { readJsonFile, writeJsonFile } from "@/lib/storage"
+import { connectMongo, hasMongoConfig } from "@/lib/mongodb"
 
 export type PaymentMethod = "qris" | "ewallet" | "card"
 export type PaymentStatus = "pending" | "success"
@@ -16,6 +17,7 @@ export interface PaymentRecord {
 }
 
 const FILE_NAME = "payments.json"
+const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1"
 
 async function readStore(): Promise<{ payments: PaymentRecord[] }> {
   const parsed = await readJsonFile<{ payments?: PaymentRecord[] }>(FILE_NAME, { payments: [] })
@@ -44,6 +46,52 @@ export async function createPaymentRequest(input: {
   amount: number
   method: PaymentMethod
 }) {
+  if (hasMongoConfig()) {
+    let client
+    try {
+      const mongo = await connectMongo()
+      client = mongo.client
+      const col = mongo.db.collection("payments")
+
+      const baseAmount = Math.max(1, Math.floor(input.amount))
+      let uniqueCode = randomUniqueCode()
+      let totalAmount = baseAmount + uniqueCode
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const collision = await col.findOne({
+          status: "pending",
+          method: input.method,
+          totalAmount,
+        })
+
+        if (!collision) break
+
+        uniqueCode = randomUniqueCode()
+        totalAmount = baseAmount + uniqueCode
+      }
+
+      const payment: PaymentRecord = {
+        id: makePaymentId(),
+        dealId: input.dealId,
+        method: input.method,
+        baseAmount,
+        uniqueCode,
+        totalAmount,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      }
+
+      await col.insertOne(payment)
+      return payment
+    } finally {
+      if (client) await client.close()
+    }
+  }
+
+  if (isProduction) {
+    throw new Error("Payments storage not configured")
+  }
+
   const baseAmount = Math.max(1, Math.floor(input.amount))
   const store = await readStore()
 
@@ -85,6 +133,47 @@ export async function confirmPaymentByAmount(input: {
   paymentId: string
   paidAmount: number
 }) {
+  if (hasMongoConfig()) {
+    let client
+    try {
+      const mongo = await connectMongo()
+      client = mongo.client
+      const col = mongo.db.collection("payments")
+
+      const current = (await col.findOne({ id: input.paymentId })) as PaymentRecord | null
+      if (!current) {
+        return { ok: false as const, reason: "not_found" as const }
+      }
+
+      if (current.status === "success") {
+        return { ok: true as const, payment: current, alreadyPaid: true as const }
+      }
+
+      if (Math.floor(input.paidAmount) !== current.totalAmount) {
+        return { ok: false as const, reason: "amount_mismatch" as const, payment: current }
+      }
+
+      const updated: PaymentRecord = {
+        ...current,
+        status: "success",
+        paidAt: new Date().toISOString(),
+      }
+
+      await col.updateOne(
+        { id: input.paymentId },
+        { $set: { status: "success", paidAt: updated.paidAt } }
+      )
+
+      return { ok: true as const, payment: updated, alreadyPaid: false as const }
+    } finally {
+      if (client) await client.close()
+    }
+  }
+
+  if (isProduction) {
+    throw new Error("Payments storage not configured")
+  }
+
   const store = await readStore()
   const index = store.payments.findIndex((payment) => payment.id === input.paymentId)
 

@@ -23,23 +23,45 @@ export async function POST(req: Request) {
   let client
   try {
     const body = await req.json()
+    const action = String(body?.action || "").trim()
     const email = String(body?.email || "").trim().toLowerCase()
-    const name = String(body?.name || "").trim()
     const username = String(body?.username || "").trim()
     const currentPassword = String(body?.currentPassword || "")
+    const confirmCurrentPassword = String(body?.confirmCurrentPassword || "")
     const newPassword = String(body?.newPassword || "")
+    const confirmNewPassword = String(body?.confirmNewPassword || "")
 
     if (!email) {
       return NextResponse.json({ error: "Email wajib diisi" }, { status: 400 })
     }
 
-    const usernameNormalized = username ? normalizeUsername(username) : ""
-    if (username && usernameNormalized.length < 3) {
-      return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 })
+    if (action !== "change_username" && action !== "change_password") {
+      return NextResponse.json({ error: "Action tidak valid" }, { status: 400 })
     }
 
-    if (newPassword && !currentPassword) {
-      return NextResponse.json({ error: "Isi password saat ini untuk ganti password" }, { status: 400 })
+    const usernameNormalized = username ? normalizeUsername(username) : ""
+    if (action === "change_username") {
+      if (!usernameNormalized || usernameNormalized.length < 3) {
+        return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 })
+      }
+      if (!currentPassword || !confirmCurrentPassword) {
+        return NextResponse.json({ error: "Password sekarang dan konfirmasi wajib diisi" }, { status: 400 })
+      }
+      if (currentPassword !== confirmCurrentPassword) {
+        return NextResponse.json({ error: "Konfirmasi password sekarang tidak sama" }, { status: 400 })
+      }
+    }
+
+    if (action === "change_password") {
+      if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return NextResponse.json({ error: "Password lama, baru, dan konfirmasi wajib diisi" }, { status: 400 })
+      }
+      if (newPassword !== confirmNewPassword) {
+        return NextResponse.json({ error: "Konfirmasi password baru tidak sama" }, { status: 400 })
+      }
+      if (currentPassword === newPassword) {
+        return NextResponse.json({ error: "Password baru harus berbeda" }, { status: 400 })
+      }
     }
 
     if (hasMongoConfig()) {
@@ -52,26 +74,20 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 })
       }
 
-      if (usernameNormalized && usernameNormalized !== String(user.username || "")) {
+      if (action === "change_username" && usernameNormalized !== String(user.username || "")) {
         const usernameUsed = await usersCol.findOne({ username: usernameNormalized, email: { $ne: email } })
         if (usernameUsed) {
           return NextResponse.json({ error: "Username sudah dipakai" }, { status: 409 })
         }
       }
 
-      if (newPassword) {
-        if (String(user.password || "") !== currentPassword) {
-          return NextResponse.json({ error: "Password saat ini salah" }, { status: 400 })
-        }
-        if (currentPassword === newPassword) {
-          return NextResponse.json({ error: "Password baru harus berbeda" }, { status: 400 })
-        }
+      if (String(user.password || "") !== currentPassword) {
+        return NextResponse.json({ error: "Password saat ini salah" }, { status: 400 })
       }
 
       const updatePayload: any = {}
-      if (name) updatePayload.name = name
-      if (usernameNormalized) updatePayload.username = usernameNormalized
-      if (newPassword) updatePayload.password = newPassword
+      if (action === "change_username") updatePayload.username = usernameNormalized
+      if (action === "change_password") updatePayload.password = newPassword
 
       if (Object.keys(updatePayload).length > 0) {
         await usersCol.updateOne({ email }, { $set: updatePayload })
@@ -88,25 +104,22 @@ export async function POST(req: Request) {
     }
 
     const current = users[idx]
-    if (usernameNormalized && usernameNormalized !== String(current.username || "")) {
+    if (action === "change_username" && usernameNormalized !== String(current.username || "")) {
       const usernameUsed = users.some((u, i) => i !== idx && normalizeUsername(String(u.username || "")) === usernameNormalized)
       if (usernameUsed) {
         return NextResponse.json({ error: "Username sudah dipakai" }, { status: 409 })
       }
     }
 
-    if (newPassword) {
-      if (String(current.password || "") !== currentPassword) {
-        return NextResponse.json({ error: "Password saat ini salah" }, { status: 400 })
-      }
-      if (currentPassword === newPassword) {
-        return NextResponse.json({ error: "Password baru harus berbeda" }, { status: 400 })
-      }
+    if (String(current.password || "") !== currentPassword) {
+      return NextResponse.json({ error: "Password saat ini salah" }, { status: 400 })
+    }
+
+    if (action === "change_password") {
       current.password = newPassword
     }
 
-    if (name) current.name = name
-    if (usernameNormalized) current.username = usernameNormalized
+    if (action === "change_username") current.username = usernameNormalized
 
     users[idx] = current
     await writeJsonFile("users.json", users)

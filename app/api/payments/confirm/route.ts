@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       alreadyPaid: result.alreadyPaid,
       payment: result.payment,
     })
-  } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+  } catch (err: any) {
+    return NextResponse.json({ error: "Server error", detail: err?.message || "Unknown error" }, { status: 500 })
   }
 }
