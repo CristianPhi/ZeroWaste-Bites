@@ -27,14 +27,14 @@ export default function LoginPage() {
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user))
         }
-        alert("Login Berhasil!")
-        window.location.href = "/"
+        toast({ title: "Login Berhasil!", description: "Selamat datang kembali.", variant: "default" })
+        setTimeout(() => { window.location.href = "/" }, 1200)
       } else {
-        alert(data.error || "Email atau password salah")
+        toast({ title: "Login Gagal", description: data.error || "Email atau password salah", variant: "destructive" })
       }
     } catch (err) {
       setLoading(false)
-      alert("Gagal terhubung ke server")
+      toast({ title: "Server Error", description: "Gagal terhubung ke server", variant: "destructive" })
     }
   }
 

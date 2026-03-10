@@ -25,7 +25,7 @@ export default function RegisterPage() {
       const data = await res.json()
       setLoading(false)
       if (!res.ok) {
-        alert(data.error || "Registration failed")
+        toast({ title: "Register Gagal", description: data.error || "Registration failed", variant: "destructive" })
         return
       }
 
@@ -33,7 +33,7 @@ export default function RegisterPage() {
       router.push(`/auth/login?email=${encodeURIComponent(email)}`)
     } catch (err) {
       setLoading(false)
-      alert("Registration error")
+      toast({ title: "Server Error", description: "Registration error", variant: "destructive" })
     }
   }
 
