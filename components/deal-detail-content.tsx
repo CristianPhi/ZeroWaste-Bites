@@ -9,6 +9,7 @@ import { isDealClaimed } from "@/lib/claims"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useState } from "react"
+import { AppLogo } from "@/components/app-logo"
 
 export function DealDetailContent({ dealId }: { dealId: string }) {
   const post = dealPosts.find((p) => p.id === dealId)
@@ -44,7 +45,7 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
     <div className="flex flex-col pb-28">
       <div className="px-4 pt-4">
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Deal</h1>
       </div>

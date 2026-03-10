@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { dealPosts, type DealPost } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
 import { getFavorites, removeFavorite } from "@/lib/favorites"
+import { AppLogo } from "@/components/app-logo"
 
 export default function SavedDealsPage() {
   const [savedIds, setSavedIds] = useState<string[]>([])
@@ -54,7 +54,7 @@ export default function SavedDealsPage() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Saved Deals</h1>
       </header>

@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Clock, MapPin, Navigation, Package } from "lucide-react"
+import { AppLogo } from "@/components/app-logo"
 
 const claimedDeals = [
   {
@@ -39,7 +40,7 @@ export function OrdersContent() {
     <div className="flex flex-col gap-5 pb-4">
       <header>
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Claims</h1>
         <p className="mt-1 text-center text-xs text-muted-foreground">

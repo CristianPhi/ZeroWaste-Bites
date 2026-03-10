@@ -6,6 +6,7 @@ import { dealPosts, stores } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import Link from "next/link"
 import Image from "next/image"
+import { AppLogo } from "@/components/app-logo"
 
 const categories = ["All", "Bakery", "Meals", "Snacks", "Drinks"]
 
@@ -35,7 +36,7 @@ export function BrowseContent() {
       <div className="sticky top-0 z-40 bg-background/95 px-4 pt-4 pb-3 backdrop-blur-md">
         <div className="flex items-start justify-between">
           <Link href="/" aria-label="Go to Feed">
-            <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+            <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
           </Link>
           <div className="w-9" />
         </div>

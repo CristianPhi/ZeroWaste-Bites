@@ -6,7 +6,7 @@ import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { AppLogo } from "@/components/app-logo"
 
 const categories = [
   { label: "For You", value: "all" },
@@ -31,7 +31,7 @@ export function HomeContent() {
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <Link href="/" aria-label="Go to Feed">
-            <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+            <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
           </Link>
           <div className="flex items-center gap-2">
             <Link

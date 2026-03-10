@@ -2,9 +2,9 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Eye, EyeOff } from "lucide-react"
 import { AuthFeedbackModal } from "@/components/auth-feedback-modal"
+import { AppLogo } from "@/components/app-logo"
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("")
@@ -56,8 +56,7 @@ export default function LoginPage() {
     <div className="mx-auto w-full max-w-md px-4 py-12">
       <header className="mb-8 text-center">
         <Link href="/" className="inline-block">
-          <Image src="/images/Logo.png" alt="Logo" width={180} height={40} priority className="dark:hidden" />
-          <Image src="/icon-dark-32x32.png" alt="Logo" width={40} height={40} priority className="hidden dark:inline-block" />
+          <AppLogo alt="Logo" className="h-10 w-auto" priority />
         </Link>
         <h1 className="mt-4 text-xl font-bold text-foreground">Sign In</h1>
       </header>

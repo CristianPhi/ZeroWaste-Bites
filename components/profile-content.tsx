@@ -17,12 +17,12 @@ import {
   X,
 } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import { useStudent } from "@/lib/student-context"
 import { dealPosts } from "@/lib/data"
 import { useEffect } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { AppLogo } from "@/components/app-logo"
 
 const menuItems = [
   { icon: Heart, label: "Saved Deals", description: "Deals you liked" },
@@ -94,7 +94,7 @@ export function ProfileContent() {
     <div className="flex flex-col gap-5 pb-4">
       <header>
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Profile</h1>
       </header>

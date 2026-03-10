@@ -2,10 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { Suspense } from "react"
 import { setDealClaimed } from "@/lib/claims"
+import { AppLogo } from "@/components/app-logo"
 
 type PaymentStatus = "pending" | "success"
 
@@ -129,7 +129,7 @@ function PaymentsPageContent() {
     <main className="mx-auto w-full max-w-5xl px-4 py-12">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Checkout</h1>
       </header>

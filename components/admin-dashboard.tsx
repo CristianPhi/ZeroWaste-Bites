@@ -16,6 +16,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { dealPosts, formatPrice } from "@/lib/data"
+import { AppLogo } from "@/components/app-logo"
 
 const storePosts = dealPosts.filter((f) => f.store.id === "holland-bakery")
 
@@ -67,7 +68,7 @@ export function AdminDashboard() {
       <header className="flex items-start justify-between">
         <div>
           <Link href="/" aria-label="Go to Feed">
-            <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+            <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
           </Link>
         </div>
         <Link

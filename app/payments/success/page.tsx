@@ -1,5 +1,5 @@
 import Link from "next/link"
-import Image from "next/image"
+import { AppLogo } from "@/components/app-logo"
 
 export default async function PaymentSuccessPage({
   searchParams,
@@ -14,7 +14,7 @@ export default async function PaymentSuccessPage({
     <main className="mx-auto w-full max-w-5xl px-4 py-12">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Payment Success</h1>
       </header>

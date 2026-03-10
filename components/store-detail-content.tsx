@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, Clock, MapPin, ShieldCheck, Star } from "lucide-react"
 import { stores, dealPosts, formatPrice } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
+import { AppLogo } from "@/components/app-logo"
 
 export function StoreDetailContent({ storeId }: { storeId: string }) {
   const store = stores.find((s) => s.id === storeId)
@@ -29,7 +30,7 @@ export function StoreDetailContent({ storeId }: { storeId: string }) {
       <div className="relative bg-primary/5 px-4 pb-6 pt-4">
         <div className="mb-3">
           <Link href="/" aria-label="Go to Feed">
-            <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+            <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
           </Link>
           <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Store</h1>
         </div>
