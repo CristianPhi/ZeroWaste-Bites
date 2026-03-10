@@ -1,9 +1,29 @@
 [
   {
-    "id": "user_1772700300525",
+    "id": "user_1773119832723",
     "name": "Cristian Philander",
-    "email": "cristian.philander06@gmail.com",
+    "email": "philandercristian@gmail.com",
+    "username": "jasontaiiiiiiiiiii",
     "password": "Cp060806",
-    "phone": "+628982060806"
+    "phone": "+628982060806",
+    "createdAt": "2026-03-10T05:17:12.723Z"
+  },
+  {
+    "id": "user_1773120192118",
+    "name": "JASONNNNNNNNNNNNNNNNNNNNNN",
+    "email": "cristian.philander06@gmail.coom",
+    "username": "jasonnnnnnnnnnnnnnnnnnnnnn",
+    "password": "Cp060806",
+    "phone": "+628982060806",
+    "createdAt": "2026-03-10T05:23:12.118Z"
+  },
+  {
+    "id": "user_1773120392187",
+    "name": "Jason Leonardi Wijaya Hendra",
+    "email": "cristian.philander06@gmail.com",
+    "username": "jasonajg",
+    "password": "JASONNNN",
+    "phone": "+628982060806",
+    "createdAt": "2026-03-10T05:26:32.187Z"
   }
 ]

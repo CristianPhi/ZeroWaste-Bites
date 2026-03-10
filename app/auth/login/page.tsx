@@ -56,7 +56,8 @@ export default function LoginPage() {
     <div className="mx-auto w-full max-w-md px-4 py-12">
       <header className="mb-8 text-center">
         <Link href="/" className="inline-block">
-          <Image src="/images/Logo.png" alt="Logo" width={180} height={40} priority />
+          <Image src="/images/Logo.png" alt="Logo" width={180} height={40} priority className="dark:hidden" />
+          <Image src="/icon-dark-32x32.png" alt="Logo" width={40} height={40} priority className="hidden dark:inline-block" />
         </Link>
         <h1 className="mt-4 text-xl font-bold text-foreground">Sign In</h1>
       </header>
@@ -70,7 +71,7 @@ export default function LoginPage() {
             onChange={(e) => setIdentifier(e.target.value)}
             required
             className="rounded-md border border-border bg-background p-2 text-foreground placeholder:text-muted-foreground"
-            placeholder="nama@email.com atau username"
+            placeholder="email atau username"
           />
         </div>
 

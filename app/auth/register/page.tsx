@@ -67,7 +67,8 @@ export default function RegisterPage() {
     <div className="mx-auto w-full max-w-5xl px-4 py-12">
       <header className="mb-4">
         <Link href="/" aria-label="Go to Feed">
-          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto" priority />
+          <Image src="/images/Logo.png" alt="ZeroWaste Bites" width={180} height={36} className="h-16 w-auto dark:hidden" priority />
+          <Image src="/icon-dark-32x32.png" alt="ZeroWaste Bites" width={56} height={56} className="hidden h-14 w-14 dark:block" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Register</h1>
       </header>

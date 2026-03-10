@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "email": "philandercristian@gmail.com",
+    "code": "389978",
+    "purpose": "reset-password",
+    "expiresAt": "2026-03-10T05:28:59.338Z",
+    "createdAt": "2026-03-10T05:18:59.346Z"
+  }
+]
