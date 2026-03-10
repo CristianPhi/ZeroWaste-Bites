@@ -1,14 +1,25 @@
 "use client"
 
 import React, { useState } from "react"
-import { toast } from "@/hooks/use-toast"
 import Link from "next/link"
 import Image from "next/image"
+import { AuthFeedbackModal } from "@/components/auth-feedback-modal"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackType, setFeedbackType] = useState<"success" | "error">("success")
+  const [feedbackTitle, setFeedbackTitle] = useState("")
+  const [feedbackDescription, setFeedbackDescription] = useState("")
+
+  const showFeedback = (type: "success" | "error", title: string, description: string) => {
+    setFeedbackType(type)
+    setFeedbackTitle(title)
+    setFeedbackDescription(description)
+    setFeedbackOpen(true)
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,14 +39,14 @@ export default function LoginPage() {
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user))
         }
-        toast({ title: "Login Berhasil!", description: "Selamat datang kembali.", variant: "default" })
+        showFeedback("success", "Login Berhasil", "Selamat datang kembali.")
         setTimeout(() => { window.location.href = "/" }, 1200)
       } else {
-        toast({ title: "Login Gagal", description: data.error || "Email atau password salah", variant: "destructive" })
+        showFeedback("error", "Login Gagal", data.error || "Email atau password salah")
       }
     } catch (err) {
       setLoading(false)
-      toast({ title: "Server Error", description: "Gagal terhubung ke server", variant: "destructive" })
+      showFeedback("error", "Server Error", "Gagal terhubung ke server")
     }
   }
 
@@ -85,6 +96,14 @@ export default function LoginPage() {
       <p className="mt-6 text-center text-sm">
         Belum punya akun? <Link href="/auth/register" className="font-bold text-primary">Daftar Sekarang</Link>
       </p>
+
+      <AuthFeedbackModal
+        open={feedbackOpen}
+        title={feedbackTitle}
+        description={feedbackDescription}
+        type={feedbackType}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   )
 }

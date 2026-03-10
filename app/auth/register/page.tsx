@@ -4,7 +4,8 @@ import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { toast } from "@/hooks/use-toast"
+import { Eye, EyeOff } from "lucide-react"
+import { AuthFeedbackModal } from "@/components/auth-feedback-modal"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -12,10 +13,30 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackType, setFeedbackType] = useState<"success" | "error">("success")
+  const [feedbackTitle, setFeedbackTitle] = useState("")
+  const [feedbackDescription, setFeedbackDescription] = useState("")
+
+  const showFeedback = (type: "success" | "error", title: string, description: string) => {
+    setFeedbackType(type)
+    setFeedbackTitle(title)
+    setFeedbackDescription(description)
+    setFeedbackOpen(true)
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (password !== confirmPassword) {
+      showFeedback("error", "Password Tidak Sama", "Konfirmasi password harus sama dengan password.")
+      return
+    }
+
     setLoading(true)
     try {
         const res = await fetch("/api/auth/register", {
@@ -26,18 +47,18 @@ export default function RegisterPage() {
       const data = await res.json()
       setLoading(false)
       if (!res.ok) {
-        toast({ title: "Register Gagal", description: data.error || "Registration failed", variant: "destructive" })
+        showFeedback("error", "Register Gagal", data.error || "Registration failed")
         return
       }
 
       // after register, navigate to login with email prefilled
-      toast({ title: "Register Berhasil", description: "Akun berhasil dibuat.", variant: "default" })
+      showFeedback("success", "Register Berhasil", "Akun berhasil dibuat.")
       setTimeout(() => {
         router.push(`/auth/login?email=${encodeURIComponent(email)}`)
       }, 1200)
     } catch (err) {
       setLoading(false)
-      toast({ title: "Server Error", description: "Registration error", variant: "destructive" })
+      showFeedback("error", "Server Error", "Registration error")
     }
   }
 
@@ -85,13 +106,44 @@ export default function RegisterPage() {
 
         <label className="flex flex-col text-sm">
           <span className="mb-1 text-xs text-muted-foreground">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="rounded-md border px-3 py-2"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-md border px-3 py-2 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </label>
+
+        <label className="flex flex-col text-sm">
+          <span className="mb-1 text-xs text-muted-foreground">Confirm Password</span>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className="w-full rounded-md border px-3 py-2 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((s) => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              aria-label={showConfirmPassword ? "Sembunyikan konfirmasi password" : "Lihat konfirmasi password"}
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </label>
 
         <button
@@ -106,6 +158,14 @@ export default function RegisterPage() {
       <p className="mt-4 text-sm">
         Already have an account? <Link href="/auth/login" className="text-primary">Sign in</Link>
       </p>
+
+      <AuthFeedbackModal
+        open={feedbackOpen}
+        title={feedbackTitle}
+        description={feedbackDescription}
+        type={feedbackType}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   )
 }
