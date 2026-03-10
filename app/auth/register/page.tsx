@@ -30,6 +30,9 @@ export default function RegisterPage() {
     setFeedbackOpen(true)
   }
 
+  const inputClass =
+    "w-full rounded-md border-2 border-emerald-600/35 bg-background/65 px-3 py-2 text-foreground dark:border-emerald-300/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -65,8 +68,8 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-12">
-      <header className="mb-4">
-        <Link href="/" aria-label="Go to Feed">
+      <header className="mb-4 text-center">
+        <Link href="/" aria-label="Go to Feed" className="inline-flex justify-center">
           <AppLogo alt="ZeroWaste Bites" className="h-16 w-auto" priority />
         </Link>
         <h1 className="mt-2 text-center text-lg font-semibold tracking-tight text-foreground">Register</h1>
@@ -79,7 +82,7 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="rounded-md border px-3 py-2"
+              className={inputClass}
             />
           </label>
 
@@ -90,7 +93,7 @@ export default function RegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="rounded-md border px-3 py-2"
+              className={inputClass}
               placeholder="contoh: cristianp"
             />
           </label>
@@ -102,7 +105,7 @@ export default function RegisterPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
-              className="rounded-md border px-3 py-2"
+              className={inputClass}
             />
           </label>
 
@@ -113,7 +116,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-md border px-3 py-2"
+            className={inputClass}
           />
         </label>
 
@@ -125,7 +128,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-md border px-3 py-2 pr-10"
+              className={`${inputClass} pr-10`}
             />
             <button
               type="button"
@@ -146,7 +149,7 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="w-full rounded-md border px-3 py-2 pr-10"
+              className={`${inputClass} pr-10`}
             />
             <button
               type="button"

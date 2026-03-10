@@ -23,6 +23,9 @@ export default function LoginPage() {
     setFeedbackOpen(true)
   }
 
+  const inputClass =
+    "w-full rounded-md border-2 border-emerald-600/35 bg-background/65 p-2 text-foreground placeholder:text-muted-foreground dark:border-emerald-300/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -55,7 +58,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12">
       <header className="mb-8 text-center">
-        <Link href="/" className="inline-block">
+        <Link href="/" className="inline-flex justify-center">
           <AppLogo alt="Logo" className="h-10 w-auto" priority />
         </Link>
         <h1 className="mt-4 text-xl font-bold text-foreground">Sign In</h1>
@@ -69,7 +72,7 @@ export default function LoginPage() {
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             required
-            className="rounded-md border border-border bg-background p-2 text-foreground placeholder:text-muted-foreground"
+            className={inputClass}
             placeholder="email atau username"
           />
         </div>
@@ -85,7 +88,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-md border border-border bg-background p-2 pr-10 text-foreground placeholder:text-muted-foreground"
+              className={`${inputClass} pr-10`}
               placeholder="Masukkan password"
             />
             <button

@@ -12,14 +12,14 @@ export function AppLogo({
   priority = false,
 }: AppLogoProps) {
   return (
-    <span className="inline-flex origin-left items-center">
+    <span className={`inline-flex origin-left items-center ${className}`}>
       <Image
         src="/images/Logo.png"
         alt={alt}
         width={220}
         height={72}
         priority={priority}
-        className={`${className} h-18! w-55! object-contain dark:hidden`}
+        className="h-18 w-55 object-contain dark:hidden"
       />
       <Image
         src="/images/Logo DrakTheme No Background.png"
@@ -27,7 +27,7 @@ export function AppLogo({
         width={220}
         height={72}
         priority={priority}
-        className={`hidden ${className} h-18! w-55! object-contain dark:block`}
+        className="hidden h-18 w-55 origin-left object-contain dark:block dark:scale-[1.18]"
       />
     </span>
   )
