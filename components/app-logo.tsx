@@ -8,26 +8,26 @@ type AppLogoProps = {
 
 export function AppLogo({
   alt = "ZeroWaste Bites",
-  className = "h-20 w-auto",
+  className = "",
   priority = false,
 }: AppLogoProps) {
   return (
-    <span className="inline-flex origin-left items-center scale-110">
+    <span className="inline-flex origin-left items-center">
       <Image
         src="/images/Logo.png"
         alt={alt}
-        width={180}
-        height={36}
+        width={220}
+        height={72}
         priority={priority}
-        className={`${className} dark:hidden`}
+        className={`${className} h-18! w-55! object-contain dark:hidden`}
       />
       <Image
         src="/images/Logo DrakTheme No Background.png"
         alt={alt}
-        width={180}
-        height={36}
+        width={220}
+        height={72}
         priority={priority}
-        className={`hidden ${className} dark:block dark:scale-125`}
+        className={`hidden ${className} h-18! w-55! object-contain dark:block`}
       />
     </span>
   )
