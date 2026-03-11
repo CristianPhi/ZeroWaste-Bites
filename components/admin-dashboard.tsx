@@ -296,7 +296,7 @@ export function AdminDashboard() {
         </div>
 
         <div className="mb-3 flex items-center gap-3">
-          <div className="relative h-14 w-14 overflow-hidden rounded-full bg-primary/10">
+          <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-primary/10">
             {user?.avatar ? (
               <Image src={user.avatar} alt={user.name || "Store avatar"} fill className="object-cover" sizes="56px" />
             ) : (

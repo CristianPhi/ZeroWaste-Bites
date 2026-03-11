@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { type DealPost, type ApiDeal, apiDealToDealPost } from "@/lib/data"
+import { dealPosts, type DealPost, type ApiDeal, apiDealToDealPost } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
 import { getFavorites, removeFavorite } from "@/lib/favorites"
@@ -35,6 +35,9 @@ export default function SavedDealsPage() {
         )
 
         const unique = new Map<string, DealPost>()
+        for (const deal of dealPosts) {
+          unique.set(String(deal.id), deal)
+        }
         for (const deal of byIdDeals) {
           if (!deal) continue
           unique.set(String(deal.id), deal)

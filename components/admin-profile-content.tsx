@@ -8,6 +8,16 @@ import { useEffect, useRef, useState } from "react"
 import { AppLogo } from "@/components/app-logo"
 import { useStudent } from "@/lib/student-context"
 import { AvatarCropModal } from "@/components/avatar-crop-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function AdminProfileContent() {
   const { user, setUser, setVerified } = useStudent()
@@ -21,6 +31,7 @@ export function AdminProfileContent() {
   const [saving, setSaving] = useState(false)
   const [avatarUploadError, setAvatarUploadError] = useState("")
   const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null)
+  const [logoutOpen, setLogoutOpen] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -138,14 +149,12 @@ export function AdminProfileContent() {
       </header>
 
       <div className="flex items-center gap-4">
-        <div className="relative h-16 w-16">
-          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+        <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
             {user?.avatar ? (
               <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
             ) : (
               <User className="h-7 w-7 text-primary" />
             )}
-          </div>
           <button
             type="button"
             onClick={() => avatarInputRef.current?.click()}
@@ -254,19 +263,7 @@ export function AdminProfileContent() {
       </div>
 
       <button
-        onClick={() => {
-          try {
-            localStorage.removeItem("user")
-            localStorage.removeItem("rememberMe")
-            sessionStorage.removeItem("user")
-          } catch {
-            // ignore
-          }
-
-          setUser(null)
-          setVerified(false)
-          router.push("/auth/login")
-        }}
+        onClick={() => setLogoutOpen(true)}
         className="flex items-center justify-center gap-2 rounded-xl bg-destructive/10 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20"
       >
         <LogOut className="h-4 w-4" />
@@ -284,6 +281,37 @@ export function AdminProfileContent() {
           }}
         />
       ) : null}
+
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure want to log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Kamu akan keluar dari akun ini dan perlu login lagi untuk kembali masuk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                try {
+                  localStorage.removeItem("user")
+                  localStorage.removeItem("rememberMe")
+                  sessionStorage.removeItem("user")
+                } catch {
+                  // ignore
+                }
+
+                setUser(null)
+                setVerified(false)
+                router.push("/auth/login")
+              }}
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

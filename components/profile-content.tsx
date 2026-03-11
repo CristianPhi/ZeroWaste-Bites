@@ -22,6 +22,16 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppLogo } from "@/components/app-logo"
 import { AvatarCropModal } from "@/components/avatar-crop-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const menuItems = [
   { icon: Heart, label: "Saved Deals", description: "Deals you liked", href: "/saved-deals" },
@@ -37,6 +47,7 @@ export function ProfileContent() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarUploadError, setAvatarUploadError] = useState("")
   const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null)
+  const [logoutOpen, setLogoutOpen] = useState(false)
 
   const router = useRouter()
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
@@ -67,6 +78,10 @@ export function ProfileContent() {
         const data = await res.json()
         const orders = Array.isArray(data?.orders) ? data.orders : []
         const completed = orders.filter((o: any) => o.status === "Completed" || o.status === "Pickup Ready")
+        const legacyDealsById = new Map(dealPosts.map((deal) => [String(deal.id), deal]))
+        const legacyDealsByName = new Map(
+          dealPosts.map((deal) => [`${String(deal.itemName).toLowerCase()}::${String(deal.store.name).toLowerCase()}`, deal])
+        )
 
         const claimed = completed.reduce((acc: number, item: any) => {
           const qty = Math.max(1, Number(item?.quantity || 1))
@@ -88,21 +103,35 @@ export function ProfileContent() {
             }
 
             const dealId = String(item?.dealId || "").trim()
+            const dealName = String(item?.dealName || "").trim().toLowerCase()
+            const storeName = String(item?.storeName || "").trim().toLowerCase()
+
+            const legacyDealByName = legacyDealsByName.get(`${dealName}::${storeName}`)
+            if (legacyDealByName) {
+              return Math.max(0, Number(legacyDealByName.originalPrice || 0) - Number(legacyDealByName.discountedPrice || 0)) * qty
+            }
+
             if (!dealId) return Math.max(0, Number(item?.pricePaid || 0))
 
             try {
               const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
               const dealData = await dealRes.json()
               const deal = dealData?.deal
-              if (!dealRes.ok || !deal) return 0
+              if (!dealRes.ok || !deal) {
+                const legacyDeal = legacyDealsById.get(dealId)
+                if (legacyDeal) {
+                  return Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
+                }
+                return Math.max(0, Number(item?.pricePaid || 0))
+              }
               const dealOriginal = Number(deal?.originalPrice || 0)
               const dealDiscounted = Number(deal?.discountedPrice || 0)
               if (dealOriginal > 0 && dealDiscounted > 0) {
                 return Math.max(0, dealOriginal - dealDiscounted) * qty
               }
-              return 0
+              return Math.max(0, Number(item?.pricePaid || 0))
             } catch {
-              const legacyDeal = dealPosts.find((d) => String(d.id) === dealId)
+              const legacyDeal = legacyDealsById.get(dealId)
               if (legacyDeal) {
                 return Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
               }
@@ -196,14 +225,12 @@ export function ProfileContent() {
       </header>
 
       <div className="flex items-center gap-4">
-        <div className="relative h-16 w-16">
-          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+        <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
             {user?.avatar ? (
               <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
             ) : (
               <User className="h-7 w-7 text-primary" />
             )}
-          </div>
           <button
             type="button"
             onClick={() => avatarInputRef.current?.click()}
@@ -322,29 +349,7 @@ export function ProfileContent() {
       </div>
 
       <button
-        onClick={async () => {
-          try {
-            try {
-              for (let i = localStorage.length - 1; i >= 0; i--) {
-                const key = localStorage.key(i)
-                if (!key) continue
-                if (key === "user" || key === "isVerified" || key.startsWith("claimed:") || key.startsWith("otp:")) {
-                  localStorage.removeItem(key)
-                }
-              }
-              localStorage.removeItem("rememberMe")
-              sessionStorage.removeItem("user")
-            } catch {
-              // ignore
-            }
-
-            setUser(null)
-            setVerified(false)
-            router.push("/auth/login")
-          } catch {
-            // ignore
-          }
-        }}
+        onClick={() => setLogoutOpen(true)}
         className="flex items-center justify-center gap-2 rounded-xl bg-destructive/10 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20"
       >
         <LogOut className="h-4 w-4" />
@@ -425,6 +430,47 @@ export function ProfileContent() {
           }}
         />
       ) : null}
+
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure want to log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Kamu akan keluar dari akun ini dan perlu login lagi untuk kembali masuk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                try {
+                  try {
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                      const key = localStorage.key(i)
+                      if (!key) continue
+                      if (key === "user" || key === "isVerified" || key.startsWith("claimed:") || key.startsWith("otp:")) {
+                        localStorage.removeItem(key)
+                      }
+                    }
+                    localStorage.removeItem("rememberMe")
+                    sessionStorage.removeItem("user")
+                  } catch {
+                    // ignore
+                  }
+
+                  setUser(null)
+                  setVerified(false)
+                  router.push("/auth/login")
+                } catch {
+                  // ignore
+                }
+              }}
+            >
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
