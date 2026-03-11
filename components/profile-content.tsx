@@ -74,6 +74,15 @@ export function ProfileContent() {
 
     ;(async () => {
       try {
+        // First, get money saved from saved_money collection (most accurate)
+        const savedMoneyRes = await fetch(`/api/saved-money?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
+        let totalFromSavedMoney = 0
+        if (savedMoneyRes.ok) {
+          const savedMoneyData = await savedMoneyRes.json()
+          totalFromSavedMoney = Number(savedMoneyData?.totalSaved || 0)
+        }
+
+        // Get orders for claimed count and fallback money saved
         const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
         const data = await res.json()
         const orders = Array.isArray(data?.orders) ? data.orders : []
@@ -85,34 +94,38 @@ export function ProfileContent() {
           return acc + qty
         }, 0)
 
-        const saved = Math.max(
-          0,
-          Math.round(
-            completed.reduce((acc: number, item: any) => {
-              const qty = Math.max(1, Number(item?.quantity || 1))
-              const originalPrice = Number(item?.originalPrice || 0)
-              const discountedPrice = Number(item?.discountedPrice || 0)
+        // Use saved_money data if available, otherwise fallback to orders
+        let saved = totalFromSavedMoney
+        if (saved === 0) {
+          saved = Math.max(
+            0,
+            Math.round(
+              completed.reduce((acc: number, item: any) => {
+                const qty = Math.max(1, Number(item?.quantity || 1))
+                const originalPrice = Number(item?.originalPrice || 0)
+                const discountedPrice = Number(item?.discountedPrice || 0)
 
-              if (originalPrice > 0 && discountedPrice >= 0) {
-                return acc + Math.max(0, originalPrice - discountedPrice) * qty
-              }
+                if (originalPrice > 0 && discountedPrice >= 0) {
+                  return acc + Math.max(0, originalPrice - discountedPrice) * qty
+                }
 
-              const estimatedSaved = Number(item?.estimatedSaved || 0)
-              if (estimatedSaved > 0) return acc + estimatedSaved
+                const estimatedSaved = Number(item?.estimatedSaved || 0)
+                if (estimatedSaved > 0) return acc + estimatedSaved
 
-              const dealId = String(item?.dealId || "").trim()
-              const legacyDeal = legacyDealsById.get(dealId)
-              if (legacyDeal) {
-                return (
-                  acc +
-                  Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
-                )
-              }
+                const dealId = String(item?.dealId || "").trim()
+                const legacyDeal = legacyDealsById.get(dealId)
+                if (legacyDeal) {
+                  return (
+                    acc +
+                    Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
+                  )
+                }
 
-              return acc
-            }, 0)
+                return acc
+              }, 0)
+            )
           )
-        )
+        }
 
         if (!mounted) return
         setClaimedCount(claimed)

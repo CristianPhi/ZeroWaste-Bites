@@ -370,7 +370,26 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
             </div>
           ) : (
             <button
-              onClick={() => router.push(`/payments?dealId=${encodeURIComponent(post.id)}&amount=${finalPrice}`)}
+              onClick={() => {
+                // Track money saved before navigating to payment
+                const moneySaved = post.originalPrice - post.discountedPrice
+                if (user?.email && moneySaved > 0) {
+                  fetch(`/api/saved-money`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      email: user.email,
+                      dealId: post.id,
+                      amountSaved: moneySaved,
+                      storeName: post.store.name,
+                      itemName: post.itemName,
+                    }),
+                  }).catch(() => {
+                    // Silently fail - don't block payment flow
+                  })
+                }
+                router.push(`/payments?dealId=${encodeURIComponent(post.id)}&amount=${finalPrice}`)
+              }}
               className="flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Claim - {formatPrice(finalPrice)}

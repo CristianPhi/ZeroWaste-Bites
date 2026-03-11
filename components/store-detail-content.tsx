@@ -20,12 +20,20 @@ export function StoreDetailContent({ storeId }: { storeId: string }) {
   useEffect(() => {
     if (!storeId) return
     fetch(`/api/stores/${encodeURIComponent(storeId)}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((data) => {
         if (data.store) setStore(data.store as Store)
         if (data.deals) setStoreDeals((data.deals as ApiDeal[]).map(apiDealToDealPost))
+        else setStoreDeals([])
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("[v0] Failed to load store:", err)
+        setStore(null)
+        setStoreDeals([])
+      })
       .finally(() => setLoading(false))
   }, [storeId])
 
