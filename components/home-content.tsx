@@ -1,10 +1,10 @@
 "use client"
 
 import { Bell, GraduationCap, Leaf, MapPin } from "lucide-react"
-import { dealPosts } from "@/lib/data"
+import { type DealPost, type ApiDeal, apiDealToDealPost } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { AppLogo } from "@/components/app-logo"
 
@@ -19,11 +19,30 @@ const categories = [
 export function HomeContent() {
   const [active, setActive] = useState("all")
   const { isVerified } = useStudent()
+  const [deals, setDeals] = useState<DealPost[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchDeals() {
+      try {
+        const res = await fetch("/api/deals")
+        if (!res.ok) return
+        const data = await res.json()
+        const mapped = (data.deals as ApiDeal[]).map(apiDealToDealPost)
+        setDeals(mapped)
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDeals()
+  }, [])
 
   const filtered =
     active === "all"
-      ? dealPosts
-      : dealPosts.filter((p) => p.category === active)
+      ? deals
+      : deals.filter((p) => p.category === active)
 
   return (
     <div className="flex flex-col">
@@ -87,11 +106,16 @@ export function HomeContent() {
 
       {/* Feed */}
       <div className="grid grid-cols-1 gap-2 pb-24 lg:grid-cols-2">
-        {filtered.map((post) => (
-          <DealPostCard key={post.id} post={post} />
-        ))}
-
-        {filtered.length === 0 && (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center px-4 py-16 text-center lg:col-span-2">
+            <Leaf className="mb-3 h-8 w-8 animate-pulse text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Loading deals...</p>
+          </div>
+        ) : filtered.length > 0 ? (
+          filtered.map((post) => (
+            <DealPostCard key={post.id} post={post} />
+          ))
+        ) : (
           <div className="flex flex-col items-center justify-center px-4 py-16 text-center lg:col-span-2">
             <Leaf className="mb-3 h-10 w-10 text-muted-foreground/40" />
             <p className="text-sm font-medium text-muted-foreground">No deals in this category yet</p>
@@ -102,3 +126,4 @@ export function HomeContent() {
     </div>
   )
 }
+

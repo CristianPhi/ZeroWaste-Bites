@@ -11,7 +11,12 @@ type UploadedDeal = {
   ownerUsername?: string
   storeName: string
   storeAvatar?: string
+  storeAddress?: string
+  storeClosingTime?: string
+  storeRating?: number
+  storeVerified?: boolean
   itemName: string
+  description?: string
   image: string
   originalPrice: number
   discountedPrice: number
@@ -45,12 +50,20 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url)
     const ownerEmail = String(url.searchParams.get("ownerEmail") || "").trim().toLowerCase()
+    const dealId = String(url.searchParams.get("id") || "").trim()
 
     if (hasMongoConfig()) {
       const mongo = await connectMongo()
       client = mongo.client
       const col = mongo.db.collection("store_uploads")
-      const query: any = ownerEmail ? { ownerEmail } : {}
+
+      if (dealId) {
+        const doc = await col.findOne({ id: dealId })
+        if (!doc) return NextResponse.json({ error: "Deal not found" }, { status: 404 })
+        return NextResponse.json({ ok: true, deal: doc })
+      }
+
+      const query: Record<string, unknown> = ownerEmail ? { ownerEmail } : { status: "active" }
       const docs = await col.find(query).sort({ createdAt: -1 }).toArray()
       return NextResponse.json({ ok: true, deals: docs })
     }
@@ -60,7 +73,16 @@ export async function GET(req: Request) {
     }
 
     const deals = await readDealsFile()
-    const filtered = ownerEmail ? deals.filter((d) => d.ownerEmail === ownerEmail) : deals
+
+    if (dealId) {
+      const deal = deals.find((d) => d.id === dealId)
+      if (!deal) return NextResponse.json({ error: "Deal not found" }, { status: 404 })
+      return NextResponse.json({ ok: true, deal })
+    }
+
+    const filtered = ownerEmail
+      ? deals.filter((d) => d.ownerEmail === ownerEmail)
+      : deals.filter((d) => d.status === "active")
     return NextResponse.json({ ok: true, deals: filtered })
   } catch (err: any) {
     return NextResponse.json({ error: "Server error", detail: err?.message || "Unknown error" }, { status: 500 })
@@ -78,7 +100,12 @@ export async function POST(req: Request) {
     const ownerUsername = String(body?.ownerUsername || "").trim()
     const storeName = String(body?.storeName || "").trim() || ownerName || "Store Owner"
     const storeAvatar = String(body?.storeAvatar || "").trim() || "/images/store-1.jpg"
+    const storeAddress = String(body?.storeAddress || "").trim()
+    const storeClosingTime = String(body?.storeClosingTime || "").trim()
+    const storeRating = toNumber(body?.storeRating, 4.5)
+    const storeVerified = Boolean(body?.storeVerified)
     const itemName = String(body?.itemName || "").trim()
+    const description = String(body?.description || "").trim()
     const image = String(body?.image || "").trim()
     const originalPrice = Math.max(1000, Math.floor(toNumber(body?.originalPrice, 0)))
     const discountPercent = Math.max(1, Math.min(95, Math.floor(toNumber(body?.discountPercent, 50))))
@@ -99,7 +126,12 @@ export async function POST(req: Request) {
       ownerUsername,
       storeName,
       storeAvatar,
+      storeAddress,
+      storeClosingTime,
+      storeRating,
+      storeVerified,
       itemName,
+      description,
       image,
       originalPrice,
       discountedPrice,
@@ -116,6 +148,26 @@ export async function POST(req: Request) {
       const mongo = await connectMongo()
       client = mongo.client
       await mongo.db.collection("store_uploads").insertOne(deal)
+
+      // Keep store_owners profile in sync with the latest store info
+      if (ownerUsername) {
+        await mongo.db.collection("store_owners").updateOne(
+          { email: ownerEmail },
+          {
+            $set: {
+              storeName,
+              storeAvatar,
+              storeAddress,
+              storeClosingTime,
+              storeRating,
+              storeVerified,
+              updatedAt: new Date(),
+            },
+          },
+          { upsert: false }
+        )
+      }
+
       return NextResponse.json({ ok: true, deal })
     }
 

@@ -2,7 +2,7 @@
 
 import { Heart, Search, SlidersHorizontal } from "lucide-react"
 import { useEffect, useState } from "react"
-import { dealPosts, stores } from "@/lib/data"
+import { type DealPost, type ApiDeal, type ApiStore, apiDealToDealPost } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import Link from "next/link"
 import Image from "next/image"
@@ -17,7 +17,32 @@ export function BrowseContent() {
   const [activeCategory, setActiveCategory] = useState("All")
   const [showStores, setShowStores] = useState(false)
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([])
+  const [deals, setDeals] = useState<DealPost[]>([])
+  const [apiStores, setApiStores] = useState<ApiStore[]>([])
+  const [loadingDeals, setLoadingDeals] = useState(true)
+  const [loadingStores, setLoadingStores] = useState(true)
   const { user } = useStudent()
+
+  useEffect(() => {
+    fetch("/api/deals")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.deals) setDeals((data.deals as ApiDeal[]).map(apiDealToDealPost))
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDeals(false))
+  }, [])
+
+  useEffect(() => {
+    if (!showStores) return
+    fetch("/api/stores")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.stores) setApiStores(data.stores as ApiStore[])
+      })
+      .catch(() => {})
+      .finally(() => setLoadingStores(false))
+  }, [showStores])
 
   useEffect(() => {
     if (!showStores) return
@@ -63,7 +88,7 @@ export function BrowseContent() {
     }
   }
 
-  const filteredDeals = dealPosts.filter((post) => {
+  const filteredDeals = deals.filter((post) => {
     const matchQuery =
       query === "" ||
       post.itemName.toLowerCase().includes(query.toLowerCase()) ||
@@ -73,7 +98,7 @@ export function BrowseContent() {
     return matchQuery && matchCategory
   })
 
-  const filteredStores = stores.filter(
+  const filteredStores = apiStores.filter(
     (s) =>
       query === "" || s.name.toLowerCase().includes(query.toLowerCase())
   )
@@ -187,7 +212,7 @@ export function BrowseContent() {
                 </div>
               </div>
               <div className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                {dealPosts.filter((p) => p.store.id === store.id).length} deals
+                {(store as ApiStore).dealCount ?? 0} deals
               </div>
               <button
                 type="button"

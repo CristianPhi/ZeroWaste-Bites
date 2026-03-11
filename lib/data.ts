@@ -144,3 +144,100 @@ export const dealPosts: DealPost[] = [
 export function formatPrice(price: number): string {
   return `Rp ${price.toLocaleString("id-ID")}`
 }
+
+export function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return "just now"
+  if (min < 60) return `${min} min ago`
+  const hrs = Math.floor(min / 60)
+  if (hrs < 24) return `${hrs} hr${hrs > 1 ? "s" : ""} ago`
+  const days = Math.floor(hrs / 24)
+  return `${days} day${days > 1 ? "s" : ""} ago`
+}
+
+export interface ApiDeal {
+  _id?: string
+  id: string
+  ownerEmail: string
+  ownerUsername?: string
+  storeName: string
+  storeAvatar?: string
+  storeAddress?: string
+  storeClosingTime?: string
+  storeRating?: number
+  storeVerified?: boolean
+  itemName: string
+  image: string
+  description?: string
+  originalPrice: number
+  discountedPrice: number
+  discountPercent: number
+  quantity: number
+  expiresAt: string
+  category: string
+  status: string
+  claimed: number
+  createdAt: string
+}
+
+export interface ApiStore {
+  id: string
+  name: string
+  avatar: string
+  address: string
+  closingTime: string
+  distance: string
+  rating: number
+  verified: boolean
+  dealCount?: number
+}
+
+export interface ApiOrder {
+  _id?: string
+  id: string
+  userEmail: string
+  dealId: string
+  dealName: string
+  storeName: string
+  storeAvatar?: string
+  storeAddress?: string
+  image: string
+  pricePaid: number
+  pickupBefore: string
+  status: "Pickup Ready" | "Completed" | "Cancelled"
+  claimedAt: string
+}
+
+export function apiDealToDealPost(deal: ApiDeal): DealPost {
+  const storeId =
+    deal.ownerUsername ||
+    deal.ownerEmail
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")
+  return {
+    id: deal.id,
+    store: {
+      id: storeId,
+      name: deal.storeName,
+      avatar: deal.storeAvatar || "/images/store-1.jpg",
+      address: deal.storeAddress || "",
+      closingTime: deal.storeClosingTime || "",
+      distance: "",
+      rating: deal.storeRating ?? 4.5,
+      verified: deal.storeVerified ?? false,
+    },
+    image: deal.image,
+    itemName: deal.itemName,
+    description: deal.description || "",
+    originalPrice: deal.originalPrice,
+    discountedPrice: deal.discountedPrice,
+    discountPercent: deal.discountPercent,
+    quantity: deal.quantity,
+    expiresAt: deal.expiresAt,
+    postedAgo: timeAgo(deal.createdAt),
+    category: deal.category,
+    claimed: deal.claimed,
+  }
+}

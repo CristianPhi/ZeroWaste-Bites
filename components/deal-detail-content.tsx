@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, Clock, GraduationCap, Heart, MapPin, Navigation, Share2, ShieldCheck, Star } from "lucide-react"
-import { dealPosts, formatPrice } from "@/lib/data"
+import { type DealPost, type ApiDeal, apiDealToDealPost, formatPrice } from "@/lib/data"
 import { useStudent, getStudentPrice } from "@/lib/student-context"
 import { isDealClaimed } from "@/lib/claims"
 import { useRouter } from "next/navigation"
@@ -12,12 +12,24 @@ import { useState } from "react"
 import { AppLogo } from "@/components/app-logo"
 
 export function DealDetailContent({ dealId }: { dealId: string }) {
-  const post = dealPosts.find((p) => p.id === dealId)
+  const [post, setPost] = useState<DealPost | null>(null)
+  const [loading, setLoading] = useState(true)
   const [claimed, setClaimed] = useState(false)
   const [liked, setLiked] = useState(false)
   const { isVerified } = useStudent()
 
   const router = useRouter()
+
+  useEffect(() => {
+    if (!dealId) return
+    fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.deal) setPost(apiDealToDealPost(data.deal as ApiDeal))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [dealId])
 
   useEffect(() => {
     try {
@@ -26,6 +38,14 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
       // ignore
     }
   }, [dealId])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <p className="text-sm text-muted-foreground">Loading deal...</p>
+      </div>
+    )
+  }
 
   if (!post) {
     return (

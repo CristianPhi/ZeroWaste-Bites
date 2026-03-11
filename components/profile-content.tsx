@@ -220,13 +220,6 @@ export function ProfileContent() {
       <button
         onClick={async () => {
           try {
-            // call dev API to clear server-side JSON DB (dev only)
-            try {
-              await fetch('/api/dev/clear-db', { method: 'POST' })
-            } catch {
-              // ignore network errors in dev
-            }
-
             // clear client-side stored user/session
             try {
               // remove keys created by app

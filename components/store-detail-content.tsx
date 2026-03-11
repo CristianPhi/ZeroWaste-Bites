@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, Clock, Heart, MapPin, ShieldCheck, Star } from "lucide-react"
-import { stores, dealPosts, formatPrice } from "@/lib/data"
+import { type Store, type DealPost, type ApiDeal, apiDealToDealPost, formatPrice } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { AppLogo } from "@/components/app-logo"
 import { useEffect, useState } from "react"
@@ -11,10 +11,23 @@ import { addFavorite, getFavorites, removeFavorite } from "@/lib/favorites"
 import { useStudent } from "@/lib/student-context"
 
 export function StoreDetailContent({ storeId }: { storeId: string }) {
-  const store = stores.find((s) => s.id === storeId)
-  const storeDeals = dealPosts.filter((p) => p.store.id === storeId)
   const { user } = useStudent()
+  const [store, setStore] = useState<Store | null>(null)
+  const [storeDeals, setStoreDeals] = useState<DealPost[]>([])
+  const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
+
+  useEffect(() => {
+    if (!storeId) return
+    fetch(`/api/stores/${encodeURIComponent(storeId)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.store) setStore(data.store as Store)
+        if (data.deals) setStoreDeals((data.deals as ApiDeal[]).map(apiDealToDealPost))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [storeId])
 
   useEffect(() => {
     if (!store) return
@@ -47,6 +60,14 @@ export function StoreDetailContent({ storeId }: { storeId: string }) {
     } catch {
       // ignore
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground text-sm">Loading store...</p>
+      </div>
+    )
   }
 
   if (!store) {
