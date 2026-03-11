@@ -15,21 +15,37 @@ export default function SavedDealsPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    if (savedIds.length === 0) {
+      setAllDeals([])
+      return
+    }
+
     ;(async () => {
       try {
-        const res = await fetch("/api/deals")
-        if (!res.ok) return
-        const data = await res.json()
-        const mapped: DealPost[] = Array.isArray(data.deals)
-          ? (data.deals as ApiDeal[]).map(apiDealToDealPost)
-          : []
+        const byIdDeals = await Promise.all(
+          savedIds.map(async (id) => {
+            try {
+              const res = await fetch(`/api/deals?id=${encodeURIComponent(id)}`)
+              const data = await res.json()
+              return res.ok && data?.deal ? apiDealToDealPost(data.deal as ApiDeal) : null
+            } catch {
+              return null
+            }
+          })
+        )
 
-        setAllDeals(mapped)
+        const unique = new Map<string, DealPost>()
+        for (const deal of byIdDeals) {
+          if (!deal) continue
+          unique.set(String(deal.id), deal)
+        }
+
+        setAllDeals(Array.from(unique.values()))
       } catch {
         setAllDeals([])
       }
     })()
-  }, [])
+  }, [savedIds])
 
   useEffect(() => {
     if (typeof window === "undefined") return

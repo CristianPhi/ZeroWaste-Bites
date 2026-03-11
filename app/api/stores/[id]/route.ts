@@ -32,6 +32,7 @@ function normalizeRequestedIds(rawId: string) {
 function matchesStoreId(item: any, candidates: string[]) {
   const ownerUsername = String(item?.ownerUsername || item?.username || "").trim().toLowerCase()
   const ownerEmail = String(item?.ownerEmail || item?.email || "").trim().toLowerCase()
+  const storeName = String(item?.storeName || "").trim().toLowerCase()
   const localPart = emailLocalPart(ownerEmail)
 
   const normalized = new Set<string>([
@@ -40,6 +41,8 @@ function matchesStoreId(item: any, candidates: string[]) {
     ownerEmail,
     localPart,
     toSlug(localPart),
+    storeName,
+    toSlug(storeName),
   ])
 
   return candidates.some((id) => normalized.has(id))

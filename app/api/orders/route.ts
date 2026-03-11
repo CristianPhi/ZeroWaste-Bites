@@ -65,8 +65,14 @@ export async function GET(req: Request) {
       const mongo = await connectMongo()
       client = mongo.client
       const col = mongo.db.collection("orders")
+      const escaped = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
       const orders = await col
-        .find({ userEmail: normalizedEmail })
+        .find({
+          $or: [
+            { userEmail: normalizedEmail },
+            { userEmail: { $regex: `^${escaped}$`, $options: "i" } },
+          ],
+        })
         .sort({ claimedAt: -1 })
         .toArray()
       return NextResponse.json({ ok: true, orders })
@@ -77,7 +83,7 @@ export async function GET(req: Request) {
     }
 
     const orders = await readOrdersFile()
-    const filtered = orders.filter((o) => o.userEmail === normalizedEmail)
+    const filtered = orders.filter((o) => normalizeEmail(String(o.userEmail || "")) === normalizedEmail)
     return NextResponse.json({ ok: true, orders: filtered })
   } catch (err: any) {
     return NextResponse.json({ error: "Server error", detail: err?.message || "Unknown error" }, { status: 500 })

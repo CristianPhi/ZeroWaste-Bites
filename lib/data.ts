@@ -213,13 +213,33 @@ export interface ApiOrder {
   claimedAt: string
 }
 
+function toSlug(value: string): string {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
+function emailLocalPart(value: string): string {
+  const email = String(value || "").trim().toLowerCase()
+  const at = email.indexOf("@")
+  if (at <= 0) return ""
+  return email.slice(0, at)
+}
+
+function resolveStoreId(deal: ApiDeal): string {
+  return (
+    toSlug(String(deal.ownerUsername || "")) ||
+    toSlug(emailLocalPart(String(deal.ownerEmail || ""))) ||
+    toSlug(String(deal.storeName || "")) ||
+    "store"
+  )
+}
+
 export function apiDealToDealPost(deal: ApiDeal): DealPost {
-  const storeId =
-    deal.ownerUsername ||
-    deal.ownerEmail
-      .split("@")[0]
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "-")
+  const storeId = resolveStoreId(deal)
   return {
     id: deal.id,
     store: {

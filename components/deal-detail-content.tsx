@@ -6,6 +6,7 @@ import { ArrowLeft, Clock, GraduationCap, Heart, MapPin, Navigation, Share2, Shi
 import { type DealPost, type ApiDeal, apiDealToDealPost, formatPrice } from "@/lib/data"
 import { useStudent, getStudentPrice } from "@/lib/student-context"
 import { isDealClaimed } from "@/lib/claims"
+import { addFavorite, getFavorites, removeFavorite } from "@/lib/favorites"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useState } from "react"
@@ -16,7 +17,7 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
   const [loading, setLoading] = useState(true)
   const [claimed, setClaimed] = useState(false)
   const [liked, setLiked] = useState(false)
-  const { isVerified } = useStudent()
+  const { isVerified, user } = useStudent()
 
   const router = useRouter()
 
@@ -38,6 +39,42 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
       // ignore
     }
   }, [dealId])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        if (user?.email) {
+          const fav = await getFavorites(user.email)
+          setLiked((fav.savedDeals || []).includes(dealId))
+          return
+        }
+        setLiked(localStorage.getItem(`saved:${dealId}`) === "true")
+      } catch {
+        setLiked(false)
+      }
+    })()
+  }, [dealId, user?.email])
+
+  const toggleLike = async () => {
+    try {
+      if (user?.email) {
+        if (!liked) {
+          await addFavorite(user.email, "deal", dealId)
+          setLiked(true)
+        } else {
+          await removeFavorite(user.email, "deal", dealId)
+          setLiked(false)
+        }
+        return
+      }
+
+      if (!liked) localStorage.setItem(`saved:${dealId}`, "true")
+      else localStorage.removeItem(`saved:${dealId}`)
+      setLiked(!liked)
+    } catch {
+      setLiked(!liked)
+    }
+  }
 
   if (loading) {
     return (
@@ -97,7 +134,7 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
         </Link>
         <div className="absolute right-4 top-4 flex gap-2">
           <button
-            onClick={() => setLiked(!liked)}
+            onClick={toggleLike}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-colors hover:bg-card"
             aria-label={liked ? "Unlike" : "Like"}
           >
