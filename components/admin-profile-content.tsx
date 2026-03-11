@@ -149,33 +149,37 @@ export function AdminProfileContent() {
       </header>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-            {user?.avatar ? (
-              <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
-            ) : (
-              <User className="h-7 w-7 text-primary" />
-            )}
-          <button
-            type="button"
-            onClick={() => avatarInputRef.current?.click()}
-            disabled={avatarUploading}
-            className="absolute -right-1 -bottom-1 rounded-full bg-primary p-1.5 text-primary-foreground"
-            aria-label="Upload avatar"
-          >
-            <Camera className="h-3 w-3" />
-          </button>
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              setAvatarCropFile(file)
-              e.currentTarget.value = ""
-            }}
-          />
+        <div>
+          <div className="relative h-16 w-16">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+              {user?.avatar ? (
+                <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
+              ) : (
+                <User className="h-7 w-7 text-primary" />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute -right-1 -bottom-1 rounded-full bg-primary p-1.5 text-primary-foreground"
+              aria-label="Upload avatar"
+            >
+              <Camera className="h-3 w-3" />
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                setAvatarCropFile(file)
+                e.currentTarget.value = ""
+              }}
+            />
+          </div>
           {avatarUploadError ? <p className="mt-1 text-[11px] text-destructive">{avatarUploadError}</p> : null}
         </div>
 

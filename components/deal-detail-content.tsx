@@ -125,6 +125,13 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
           sizes="(max-width: 448px) 100vw, 448px"
         />
         <div className="absolute inset-0 bg-linear-to-t from-foreground/40 via-transparent to-foreground/20" />
+        {leftQuantity <= 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-foreground/20">
+            <span className="rounded-full bg-muted/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground shadow-sm">
+              Sold Out
+            </span>
+          </div>
+        ) : null}
         <Link
           href="/"
           className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-colors hover:bg-card"

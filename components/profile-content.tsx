@@ -225,12 +225,15 @@ export function ProfileContent() {
       </header>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-            {user?.avatar ? (
-              <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
-            ) : (
-              <User className="h-7 w-7 text-primary" />
-            )}
+        <div>
+          <div className="relative h-16 w-16">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+              {user?.avatar ? (
+                <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
+              ) : (
+                <User className="h-7 w-7 text-primary" />
+              )}
+            </div>
           <button
             type="button"
             onClick={() => avatarInputRef.current?.click()}
@@ -252,6 +255,7 @@ export function ProfileContent() {
               e.currentTarget.value = ""
             }}
           />
+          </div>
           {avatarUploadError ? <p className="mt-2 text-[11px] text-destructive">{avatarUploadError}</p> : null}
         </div>
 

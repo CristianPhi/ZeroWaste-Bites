@@ -1,12 +1,21 @@
 "use client"
 
-import { Bell, GraduationCap, Leaf, MapPin } from "lucide-react"
+import { Bell, Clock3, GraduationCap, Leaf, MapPin, Percent, X } from "lucide-react"
 import { type DealPost, type ApiDeal, apiDealToDealPost } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { AppLogo } from "@/components/app-logo"
+
+type NotificationItem = {
+  id: string
+  storeName: string
+  itemName: string
+  discountPercent: number
+  uploadedAt: string
+  address: string
+}
 
 const categories = [
   { label: "For You", value: "all" },
@@ -22,6 +31,8 @@ export function HomeContent() {
   const [deals, setDeals] = useState<DealPost[]>([])
   const [loading, setLoading] = useState(true)
   const [mealsSaved, setMealsSaved] = useState(0)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   useEffect(() => {
     async function fetchDeals() {
@@ -29,8 +40,21 @@ export function HomeContent() {
         const res = await fetch("/api/deals")
         if (!res.ok) return
         const data = await res.json()
-        const mapped = (data.deals as ApiDeal[]).map(apiDealToDealPost)
+        const apiDeals = data.deals as ApiDeal[]
+        const mapped = apiDeals.map(apiDealToDealPost)
         setDeals(mapped)
+        const recentNotifications = [...apiDeals]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 6)
+          .map((deal) => ({
+            id: String(deal.id),
+            storeName: String(deal.storeName || "Store"),
+            itemName: String(deal.itemName || "Menu baru"),
+            discountPercent: Number(deal.discountPercent || 0),
+            uploadedAt: formatNotificationTime(String(deal.createdAt || new Date().toISOString())),
+            address: String(deal.storeAddress || "Alamat toko belum tersedia"),
+          }))
+        setNotifications(recentNotifications)
       } catch {
         // ignore
       } finally {
@@ -66,14 +90,64 @@ export function HomeContent() {
           </Link>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setNotificationsOpen((prev) => !prev)}
               className="relative rounded-full bg-secondary p-2 text-foreground transition-colors hover:bg-secondary/80"
               aria-label="Notifications"
             >
               <Bell className="h-4.5 w-4.5" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+              {notifications.length > 0 ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" /> : null}
             </button>
           </div>
         </div>
+
+        {notificationsOpen ? (
+          <div className="px-4 pb-3">
+            <div className="rounded-2xl border border-border bg-card shadow-lg">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+                  <p className="text-[11px] text-muted-foreground">Update terbaru dari toko yang upload deal baru.</p>
+                </div>
+                <button
+                  onClick={() => setNotificationsOpen(false)}
+                  className="rounded-full bg-secondary p-1.5 text-muted-foreground transition-colors hover:bg-secondary/80"
+                  aria-label="Close notifications"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length > 0 ? (
+                  notifications.map((item) => (
+                    <div key={item.id} className="border-b border-border px-4 py-3 last:border-b-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">{item.storeName}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">Upload menu baru: {item.itemName}</p>
+                        </div>
+                        <div className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                          <Percent className="h-3 w-3" />
+                          {item.discountPercent}% off
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <Clock3 className="h-3 w-3" />
+                        <span>{item.uploadedAt}</span>
+                      </div>
+                      <div className="mt-1 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                        <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+                        <span>{item.address}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">Belum ada notifikasi upload baru.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {/* Category tabs */}
         <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-1">
@@ -137,5 +211,14 @@ export function HomeContent() {
       </div>
     </div>
   )
+}
+
+function formatNotificationTime(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return "Baru saja"
+  return date.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 

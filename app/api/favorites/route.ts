@@ -71,9 +71,9 @@ export async function POST(req: Request) {
 
     // 1. Tentukan query update untuk koleksi Users
     const field = type === "deal" ? "favorites.savedDeals" : "favorites.favoriteStores"
-    const updateQuery = action === "add" 
-      ? { $addToSet: { [field]: id } } 
-      : { $pull: { [field]: id } }
+    const updateQuery: any = action === "add"
+      ? { $addToSet: { [field]: id } }
+      : { $pull: { [field]: { $in: [id] } } }
 
     // 2. Update koleksi Users (Gunakan upsert agar field favorites terbuat otomatis)
     await usersCol.updateOne(
