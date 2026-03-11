@@ -48,6 +48,8 @@ export function AdminDashboard() {
   const [uploading, setUploading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [photoUploadError, setPhotoUploadError] = useState("")
+  const [avatarUploadError, setAvatarUploadError] = useState("")
 
   const foodPhotoInputRef = useRef<HTMLInputElement | null>(null)
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
@@ -122,10 +124,15 @@ export function AdminDashboard() {
 
   const handleFoodPhotoSelect = async (file: File) => {
     setUploading(true)
+    setPhotoUploadError("")
     try {
       const url = await uploadLocalImage(file)
       setPhotoUrl(url)
       setSelectedPhotoName(file.name)
+    } catch (err: any) {
+      setPhotoUrl("")
+      setSelectedPhotoName("")
+      setPhotoUploadError(String(err?.message || "Gagal upload foto. Coba file lain."))
     } finally {
       setUploading(false)
     }
@@ -134,6 +141,7 @@ export function AdminDashboard() {
   const handleAvatarSelect = async (file: File) => {
     if (!user?.email) return
     setAvatarUploading(true)
+    setAvatarUploadError("")
     try {
       const avatarUrl = await uploadLocalImage(file)
       const res = await fetch("/api/profile", {
@@ -146,7 +154,10 @@ export function AdminDashboard() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) return
+      if (!res.ok) {
+        setAvatarUploadError(String(data?.error || "Gagal update avatar"))
+        return
+      }
 
       if (data?.profile) {
         setUser({
@@ -158,6 +169,8 @@ export function AdminDashboard() {
           avatar: String(data.profile.avatar || avatarUrl),
         })
       }
+    } catch (err: any) {
+      setAvatarUploadError(String(err?.message || "Gagal upload avatar"))
     } finally {
       setAvatarUploading(false)
     }
@@ -302,7 +315,7 @@ export function AdminDashboard() {
             <input
               ref={avatarInputRef}
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
               className="hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0]
@@ -311,6 +324,7 @@ export function AdminDashboard() {
                 e.currentTarget.value = ""
               }}
             />
+            {avatarUploadError ? <p className="mt-1 text-[11px] text-destructive">{avatarUploadError}</p> : null}
           </div>
         </div>
 
@@ -488,7 +502,7 @@ export function AdminDashboard() {
           <input
             ref={foodPhotoInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0]
@@ -497,6 +511,7 @@ export function AdminDashboard() {
               e.currentTarget.value = ""
             }}
           />
+          {photoUploadError ? <p className="mt-2 text-xs text-destructive">{photoUploadError}</p> : null}
           {photoUrl && (
             <div className="relative mt-3 h-28 w-full overflow-hidden rounded-lg">
               <Image src={photoUrl} alt="Food preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, 300px" />

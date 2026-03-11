@@ -33,6 +33,7 @@ export function ProfileContent() {
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarUploadError, setAvatarUploadError] = useState("")
 
   const router = useRouter()
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
@@ -102,6 +103,7 @@ export function ProfileContent() {
   const handleAvatarUpload = async (file: File) => {
     if (!user?.email) return
     setAvatarUploading(true)
+    setAvatarUploadError("")
     try {
       const fd = new FormData()
       fd.append("file", file)
@@ -111,7 +113,10 @@ export function ProfileContent() {
         body: fd,
       })
       const uploadData = await uploadRes.json()
-      if (!uploadRes.ok || !uploadData?.url) return
+      if (!uploadRes.ok || !uploadData?.url) {
+        setAvatarUploadError(String(uploadData?.error || "Gagal upload avatar"))
+        return
+      }
 
       const profileRes = await fetch("/api/profile", {
         method: "POST",
@@ -123,7 +128,10 @@ export function ProfileContent() {
         }),
       })
       const profileData = await profileRes.json()
-      if (!profileRes.ok || !profileData?.profile) return
+      if (!profileRes.ok || !profileData?.profile) {
+        setAvatarUploadError(String(profileData?.error || "Gagal update avatar"))
+        return
+      }
 
       setUser({
         id: String(profileData.profile.id || user.id),
@@ -133,6 +141,8 @@ export function ProfileContent() {
         role: (profileData.profile.role || user.role) as "customer" | "store_owner",
         avatar: String(profileData.profile.avatar || uploadData.url),
       })
+    } catch (err: any) {
+      setAvatarUploadError(String(err?.message || "Gagal upload avatar"))
     } finally {
       setAvatarUploading(false)
     }
@@ -167,7 +177,7 @@ export function ProfileContent() {
           <input
             ref={avatarInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0]
@@ -176,6 +186,7 @@ export function ProfileContent() {
               e.currentTarget.value = ""
             }}
           />
+          {avatarUploadError ? <p className="mt-2 text-[11px] text-destructive">{avatarUploadError}</p> : null}
         </div>
 
         <div>

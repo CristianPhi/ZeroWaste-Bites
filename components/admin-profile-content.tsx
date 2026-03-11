@@ -18,6 +18,7 @@ export function AdminProfileContent() {
   const [storeClosingTime, setStoreClosingTime] = useState("22:00")
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [avatarUploadError, setAvatarUploadError] = useState("")
 
   useEffect(() => {
     if (!user) {
@@ -72,6 +73,7 @@ export function AdminProfileContent() {
   const handleAvatarUpload = async (file: File) => {
     if (!user?.email) return
     setAvatarUploading(true)
+    setAvatarUploadError("")
     try {
       const avatarUrl = await uploadLocalImage(file)
       const res = await fetch("/api/profile", {
@@ -84,7 +86,10 @@ export function AdminProfileContent() {
         }),
       })
       const data = await res.json()
-      if (!res.ok || !data?.profile) return
+      if (!res.ok || !data?.profile) {
+        setAvatarUploadError(String(data?.error || "Gagal update avatar"))
+        return
+      }
 
       setUser({
         id: String(data.profile.id || user.id),
@@ -94,6 +99,8 @@ export function AdminProfileContent() {
         role: (data.profile.role || user.role) as "customer" | "store_owner",
         avatar: String(data.profile.avatar || avatarUrl),
       })
+    } catch (err: any) {
+      setAvatarUploadError(String(err?.message || "Gagal upload avatar"))
     } finally {
       setAvatarUploading(false)
     }
@@ -149,7 +156,7 @@ export function AdminProfileContent() {
           <input
             ref={avatarInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0]
@@ -158,6 +165,7 @@ export function AdminProfileContent() {
               e.currentTarget.value = ""
             }}
           />
+          {avatarUploadError ? <p className="mt-1 text-[11px] text-destructive">{avatarUploadError}</p> : null}
         </div>
 
         <div>
