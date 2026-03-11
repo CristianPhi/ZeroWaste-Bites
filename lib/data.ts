@@ -204,6 +204,10 @@ export interface ApiOrder {
   storeAddress?: string
   image: string
   pricePaid: number
+  originalPrice?: number
+  discountedPrice?: number
+  quantity?: number
+  estimatedSaved?: number
   pickupBefore: string
   status: "Pickup Ready" | "Completed" | "Cancelled"
   claimedAt: string

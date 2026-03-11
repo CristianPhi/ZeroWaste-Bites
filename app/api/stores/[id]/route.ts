@@ -22,11 +22,14 @@ export async function GET(
       client = mongo.client
       const db = mongo.db
 
+      const storeIdAsEmail = storeId.includes("@") ? storeId : `${storeId}@`
+
       // Try to get store profile from store_owners
       const owner = await db.collection("store_owners").findOne({
         $or: [
           { username: storeId },
           { email: storeId },
+          { email: { $regex: `^${storeIdAsEmail}`, $options: "i" } },
         ],
       })
 
@@ -37,8 +40,8 @@ export async function GET(
           $or: [
             { ownerUsername: storeId },
             { ownerEmail: storeId },
+            { ownerEmail: { $regex: `^${storeIdAsEmail}`, $options: "i" } },
           ],
-          status: "active",
         })
         .sort({ createdAt: -1 })
         .toArray()
@@ -77,10 +80,10 @@ export async function GET(
     const deals = await readJsonFile<any[]>("deals.json", [])
     const storeDeals = deals.filter(
       (d) =>
-        d.status === "active" &&
         (
           String(d.ownerUsername || "").toLowerCase() === storeId ||
-          String(d.ownerEmail || "").toLowerCase() === storeId
+          String(d.ownerEmail || "").toLowerCase() === storeId ||
+          String(d.ownerEmail || "").toLowerCase().startsWith(`${storeId}@`)
         )
     )
 

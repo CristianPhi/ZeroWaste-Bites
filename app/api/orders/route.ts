@@ -14,6 +14,10 @@ type OrderRecord = {
   storeAddress?: string
   image: string
   pricePaid: number
+  originalPrice?: number
+  discountedPrice?: number
+  quantity?: number
+  estimatedSaved?: number
   pickupBefore: string
   status: "Pickup Ready" | "Completed" | "Cancelled"
   claimedAt: string
@@ -84,6 +88,9 @@ export async function POST(req: Request) {
     const storeAddress = String(body?.storeAddress || "").trim()
     const image = String(body?.image || "").trim()
     const pricePaid = Number(body?.pricePaid) || 0
+    const originalPrice = Math.max(0, Number(body?.originalPrice) || 0)
+    const discountedPrice = Math.max(0, Number(body?.discountedPrice) || 0)
+    const quantity = Math.max(1, Math.floor(Number(body?.quantity) || 1))
     const pickupBefore = String(body?.pickupBefore || "").trim()
 
     if (!userEmail || !dealId || !dealName || !storeName) {
@@ -103,6 +110,10 @@ export async function POST(req: Request) {
       storeAddress,
       image: image || "/images/bakery.jpg",
       pricePaid,
+      originalPrice,
+      discountedPrice,
+      quantity,
+      estimatedSaved: Math.max(0, originalPrice - discountedPrice) * quantity,
       pickupBefore,
       status: "Pickup Ready",
       claimedAt: new Date().toISOString(),
@@ -120,6 +131,39 @@ export async function POST(req: Request) {
       )
 
       await db.collection("orders").insertOne(order)
+
+      await db.collection("app_stats").updateOne(
+        { key: "global" },
+        {
+          $inc: { mealsSaved: 1 },
+          $setOnInsert: { key: "global", createdAt: new Date() },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: true }
+      )
+
+      await db.collection("users").updateOne(
+        { email: userEmail },
+        { $inc: { mealsSaved: 1 } }
+      )
+
+      const deal = await db.collection("store_uploads").findOne({ id: dealId })
+      if (deal?.ownerEmail) {
+        await db.collection("store_owners").updateOne(
+          { email: String(deal.ownerEmail).toLowerCase() },
+          {
+            $inc: { mealsSaved: 1 },
+            $setOnInsert: {
+              email: String(deal.ownerEmail).toLowerCase(),
+              username: deal.ownerUsername,
+              ownerName: deal.ownerName,
+              createdAt: new Date(),
+            },
+          },
+          { upsert: true }
+        )
+      }
+
       return NextResponse.json({ ok: true, order })
     }
 
@@ -130,6 +174,9 @@ export async function POST(req: Request) {
     const orders = await readOrdersFile()
     orders.unshift(order)
     await writeOrdersFile(orders)
+
+    const stats = await readJsonFile<{ mealsSaved?: number }>("stats.json", { mealsSaved: 0 })
+    await writeJsonFile("stats.json", { mealsSaved: Number(stats.mealsSaved || 0) + 1 })
 
     return NextResponse.json({ ok: true, order })
   } catch (err: any) {

@@ -10,15 +10,14 @@ import {
   LogOut,
   Settings,
   Store,
-  User,
   Upload,
+  User,
   X,
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { useStudent } from "@/lib/student-context"
-import { dealPosts } from "@/lib/data"
-import { useEffect } from "react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppLogo } from "@/components/app-logo"
 
@@ -33,59 +32,110 @@ export function ProfileContent() {
   const { isVerified, setVerified, user, setUser } = useStudent()
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   const router = useRouter()
+  const avatarInputRef = useRef<HTMLInputElement | null>(null)
 
   const [claimedCount, setClaimedCount] = useState(0)
   const [moneySaved, setMoneySaved] = useState(0)
   const [foodRescuedKg, setFoodRescuedKg] = useState(0)
 
   useEffect(() => {
-    // compute stats from localStorage claimed keys
-    if (typeof window === "undefined") return
-    try {
-      let claimedIds: string[] = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (!key) continue
-        if (key.startsWith("claimed:")) claimedIds.push(key.replace("claimed:", ""))
-      }
-      if (claimedIds.length === 0) {
-        setClaimedCount(0)
-        setMoneySaved(0)
-        setFoodRescuedKg(0)
-        return
-      }
+    if (user?.role === "store_owner") {
+      router.replace("/admin/profile")
+    }
+  }, [user?.role, router])
 
-      let money = 0
-      let kg = 0
-      for (const id of claimedIds) {
-        const deal = dealPosts.find((d) => d.id === id)
-        if (!deal) continue
-        // money saved = original - discounted (assume 1 unit claimed)
-        money += Math.max(0, deal.originalPrice - deal.discountedPrice)
-        // approximate 0.5 kg per claimed item times quantity
-        kg += (deal.quantity ?? 1) * 0.5
-      }
-
-      setClaimedCount(claimedIds.length)
-      setMoneySaved(money)
-      setFoodRescuedKg(Number(kg.toFixed(1)))
-    } catch {
+  useEffect(() => {
+    if (!user?.email) {
       setClaimedCount(0)
       setMoneySaved(0)
       setFoodRescuedKg(0)
+      return
     }
-  }, [user])
+
+    fetch(`/api/orders?email=${encodeURIComponent(user.email)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const orders = Array.isArray(data?.orders) ? data.orders : []
+        const completed = orders.filter((o: any) => o.status === "Completed" || o.status === "Pickup Ready")
+        const claimed = completed.reduce((acc: number, item: any) => {
+          const qty = Math.max(1, Number(item?.quantity || 1))
+          return acc + qty
+        }, 0)
+
+        const saved = completed.reduce((acc: number, item: any) => {
+          const qty = Math.max(1, Number(item?.quantity || 1))
+          const originalPrice = Number(item?.originalPrice || 0)
+          const discountedPrice = Number(item?.discountedPrice || 0)
+
+          // Keep backward compatibility with old orders that only stored pricePaid.
+          const perMealSaved =
+            originalPrice > 0 && discountedPrice > 0
+              ? Math.max(0, originalPrice - discountedPrice)
+              : Math.max(0, Number(item?.estimatedSaved || 0))
+
+          return acc + perMealSaved * qty
+        }, 0)
+
+        setClaimedCount(claimed)
+        setMoneySaved(saved)
+        setFoodRescuedKg(Number((claimed * 0.5).toFixed(1)))
+      })
+      .catch(() => {
+        setClaimedCount(0)
+        setMoneySaved(0)
+        setFoodRescuedKg(0)
+      })
+  }, [user?.email])
 
   const handleVerify = () => {
     setUploading(true)
-    // Simulate upload & verification
     setTimeout(() => {
       setUploading(false)
       setVerified(true)
       setShowVerifyModal(false)
     }, 2000)
+  }
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!user?.email) return
+    setAvatarUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+      })
+      const uploadData = await uploadRes.json()
+      if (!uploadRes.ok || !uploadData?.url) return
+
+      const profileRes = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          avatar: uploadData.url,
+          storeAvatar: uploadData.url,
+        }),
+      })
+      const profileData = await profileRes.json()
+      if (!profileRes.ok || !profileData?.profile) return
+
+      setUser({
+        id: String(profileData.profile.id || user.id),
+        name: String(profileData.profile.name || user.name),
+        email: String(profileData.profile.email || user.email),
+        username: String(profileData.profile.username || user.username || ""),
+        role: (profileData.profile.role || user.role) as "customer" | "store_owner",
+        avatar: String(profileData.profile.avatar || uploadData.url),
+      })
+    } finally {
+      setAvatarUploading(false)
+    }
   }
 
   return (
@@ -96,11 +146,38 @@ export function ProfileContent() {
         </Link>
       </header>
 
-      {/* Profile Header */}
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <User className="h-7 w-7 text-primary" />
+        <div className="relative h-16 w-16">
+          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+            {user?.avatar ? (
+              <Image src={user.avatar} alt={user.name || "Avatar"} fill className="object-cover" sizes="64px" />
+            ) : (
+              <User className="h-7 w-7 text-primary" />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="absolute -right-1 -bottom-1 rounded-full bg-primary p-1.5 text-primary-foreground"
+            aria-label="Upload avatar"
+          >
+            <Camera className="h-3 w-3" />
+          </button>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              await handleAvatarUpload(file)
+              e.currentTarget.value = ""
+            }}
+          />
         </div>
+
         <div>
           <h1 className="text-lg font-bold text-foreground">{user?.username ? `@${user.username}` : user?.name ?? "Guest"}</h1>
           <p className="text-xs text-muted-foreground">{user?.email ?? "Not signed in"}</p>
@@ -113,7 +190,6 @@ export function ProfileContent() {
         </div>
       </div>
 
-      {/* Student Verification Card */}
       {!isVerified ? (
         <button
           onClick={() => setShowVerifyModal(true)}
@@ -144,50 +220,29 @@ export function ProfileContent() {
         </div>
       )}
 
-      {/* Impact stats */}
       <div className="rounded-xl bg-primary/5 p-4">
         <div className="mb-3 flex items-center gap-2">
           <Leaf className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">Your Impact</h2>
         </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
-              <span className="text-base font-bold text-foreground">{claimedCount}</span>
-              <span className="mt-0.5 text-[10px] text-muted-foreground">Deals Claimed</span>
-            </div>
-
-            <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
-              <span className="text-base font-bold text-foreground">{moneySaved === 0 ? "Rp 0" : `Rp ${moneySaved.toLocaleString("id-ID")}`}</span>
-              <span className="mt-0.5 text-[10px] text-muted-foreground">Money Saved</span>
-            </div>
-
-            <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
-              <span className="text-base font-bold text-foreground">{foodRescuedKg} kg</span>
-              <span className="mt-0.5 text-[10px] text-muted-foreground">Food Rescued</span>
-            </div>
-            <div className="mt-3 flex justify-center">
-              <button
-                onClick={() => {
-                  try {
-                    for (let i = localStorage.length - 1; i >= 0; i--) {
-                      const key = localStorage.key(i)
-                      if (!key) continue
-                      if (key.startsWith("claimed:")) localStorage.removeItem(key)
-                    }
-                  } catch {}
-                  setClaimedCount(0)
-                  setMoneySaved(0)
-                  setFoodRescuedKg(0)
-                }}
-                className="text-xs text-muted-foreground underline"
-              >
-                Reset my stats
-              </button>
-            </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
+            <span className="text-base font-bold text-foreground">{claimedCount}</span>
+            <span className="mt-0.5 text-[10px] text-muted-foreground">Deals Claimed</span>
           </div>
+
+          <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
+            <span className="text-base font-bold text-foreground">{moneySaved === 0 ? "Rp 0" : `Rp ${moneySaved.toLocaleString("id-ID")}`}</span>
+            <span className="mt-0.5 text-[10px] text-muted-foreground">Money Saved</span>
+          </div>
+
+          <div className="flex flex-col items-center rounded-xl bg-card py-3 shadow-sm ring-1 ring-border/50">
+            <span className="text-base font-bold text-foreground">{foodRescuedKg} kg</span>
+            <span className="mt-0.5 text-[10px] text-muted-foreground">Food Rescued</span>
+          </div>
+        </div>
       </div>
 
-      {/* Menu */}
       <div className="flex flex-col overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border/50">
         {menuItems.map((item, i) => {
           const isLast = i === menuItems.length - 1
@@ -216,30 +271,26 @@ export function ProfileContent() {
         })}
       </div>
 
-      {/* Logout */}
       <button
         onClick={async () => {
           try {
-            // clear client-side stored user/session
             try {
-              // remove keys created by app
               for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i)
                 if (!key) continue
-                if (key === 'user' || key === 'isVerified' || key.startsWith('claimed:') || key.startsWith('otp:')) {
+                if (key === "user" || key === "isVerified" || key.startsWith("claimed:") || key.startsWith("otp:")) {
                   localStorage.removeItem(key)
                 }
               }
-              localStorage.removeItem('rememberMe')
-              sessionStorage.removeItem('user')
+              localStorage.removeItem("rememberMe")
+              sessionStorage.removeItem("user")
             } catch {
               // ignore
             }
 
             setUser(null)
             setVerified(false)
-            // redirect to login
-            router.push('/auth/login')
+            router.push("/auth/login")
           } catch {
             // ignore
           }
@@ -250,11 +301,10 @@ export function ProfileContent() {
         Sign Out
       </button>
 
-      {/* Student Verification Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 z-60 flex items-end justify-center bg-foreground/40 backdrop-blur-sm">
           <div className="mx-auto w-full max-w-md animate-in slide-in-from-bottom rounded-t-2xl bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-bold text-foreground">Verify Student Status</h2>
               <button
                 onClick={() => setShowVerifyModal(false)}
@@ -280,10 +330,8 @@ export function ProfileContent() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Camera className="h-6 w-6 text-primary" />
                   </div>
-                  <p className="text-sm font-medium text-foreground">
-                    Upload Student Card (KTM)
-                  </p>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-sm font-medium text-foreground">Upload Student Card (KTM)</p>
+                  <p className="text-center text-xs text-muted-foreground">
                     Take a photo or upload from gallery. Make sure your name and institution are clearly visible.
                   </p>
                 </>
@@ -308,7 +356,7 @@ export function ProfileContent() {
             </div>
 
             <div className="mt-3 rounded-lg bg-secondary/60 px-3 py-2">
-              <p className="text-[11px] text-muted-foreground text-center">
+              <p className="text-center text-[11px] text-muted-foreground">
                 Your card photo is only used for verification and will not be stored permanently.
               </p>
             </div>

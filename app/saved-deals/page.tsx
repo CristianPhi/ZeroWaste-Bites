@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { dealPosts, type DealPost } from "@/lib/data"
+import { type DealPost, type ApiDeal, apiDealToDealPost } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { useStudent } from "@/lib/student-context"
 import { getFavorites, removeFavorite } from "@/lib/favorites"
@@ -10,7 +10,7 @@ import { AppLogo } from "@/components/app-logo"
 
 export default function SavedDealsPage() {
   const [savedIds, setSavedIds] = useState<string[]>([])
-  const [uploadedDeals, setUploadedDeals] = useState<DealPost[]>([])
+  const [allDeals, setAllDeals] = useState<DealPost[]>([])
   const { user } = useStudent()
 
   useEffect(() => {
@@ -21,35 +21,12 @@ export default function SavedDealsPage() {
         if (!res.ok) return
         const data = await res.json()
         const mapped: DealPost[] = Array.isArray(data.deals)
-          ? data.deals.map((d: any) => ({
-              id: String(d.id),
-              store: {
-                id: `store-${String(d.ownerEmail || "unknown")}`,
-                name: String(d.storeName || d.ownerName || "Store Owner"),
-                avatar: String(d.storeAvatar || "/images/store-1.jpg"),
-                address: "Uploaded by store owner",
-                closingTime: "22:00",
-                distance: "-",
-                rating: 4.7,
-                verified: true,
-              },
-              image: String(d.image || "/images/store-1.jpg"),
-              itemName: String(d.itemName || "Uploaded Meal"),
-              description: "Meal uploaded by store owner",
-              originalPrice: Number(d.originalPrice || 0),
-              discountedPrice: Number(d.discountedPrice || 0),
-              discountPercent: Number(d.discountPercent || 0),
-              quantity: Number(d.quantity || 0),
-              expiresAt: String(d.expiresAt || "Tonight, 10 PM"),
-              postedAgo: "just now",
-              category: String(d.category || "Meals"),
-              claimed: Number(d.claimed || 0),
-            }))
+          ? (data.deals as ApiDeal[]).map(apiDealToDealPost)
           : []
 
-        setUploadedDeals(mapped)
+        setAllDeals(mapped)
       } catch {
-        setUploadedDeals([])
+        setAllDeals([])
       }
     })()
   }, [])
@@ -88,9 +65,8 @@ export default function SavedDealsPage() {
     } catch {}
   }
 
-  const allDeals = [...dealPosts, ...uploadedDeals]
   const savedDeals: DealPost[] = savedIds
-    .map((id) => allDeals.find((d) => d.id === id))
+    .map((id) => allDeals.find((d) => String(d.id) === String(id)))
     .filter((deal): deal is DealPost => Boolean(deal))
 
   return (

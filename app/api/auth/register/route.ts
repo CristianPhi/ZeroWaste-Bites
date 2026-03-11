@@ -19,6 +19,14 @@ type UserRecord = {
   createdAt?: string | Date;
 };
 
+type StoreOwnerRecord = {
+  email: string;
+  username?: string;
+  ownerName?: string;
+  phone?: string;
+  createdAt?: string | Date;
+};
+
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "");
 }
@@ -140,6 +148,21 @@ export async function POST(req: Request) {
     });
 
     await writeJsonFile("users.json", users);
+
+    if (normalizedRole === "store_owner") {
+      const storeOwners = await readJsonFile<StoreOwnerRecord[]>("store_owners.json", []);
+      const existsOwner = storeOwners.some((s) => String(s.email).trim().toLowerCase() === normalizedEmail);
+      if (!existsOwner) {
+        storeOwners.push({
+          email: normalizedEmail,
+          username: normalizedUsername,
+          ownerName: name,
+          phone: p,
+          createdAt: new Date().toISOString(),
+        });
+        await writeJsonFile("store_owners.json", storeOwners);
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

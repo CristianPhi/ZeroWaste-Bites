@@ -6,12 +6,14 @@ import Link from "next/link"
 import { Suspense } from "react"
 import { setDealClaimed } from "@/lib/claims"
 import { AppLogo } from "@/components/app-logo"
+import { useStudent } from "@/lib/student-context"
 
 type PaymentStatus = "pending" | "success"
 
 function PaymentsPageContent() {
   const router = useRouter()
   const search = useSearchParams()
+  const { user } = useStudent()
   const dealId = search?.get("dealId") ?? undefined
   const initialAmount = Number(search?.get("amount") ?? 5000)
   const [amount, setAmount] = useState<number>(initialAmount)
@@ -61,8 +63,40 @@ function PaymentsPageContent() {
     void createPayment()
   }, [dealId, initialAmount, method])
 
-  const finishSuccess = () => {
+  const finishSuccess = async () => {
     if (!dealId) return
+
+    try {
+      if (user?.email) {
+        const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
+        const dealData = await dealRes.json()
+        const deal = dealData?.deal
+
+        if (dealRes.ok && deal) {
+          await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userEmail: user.email,
+              dealId: deal.id,
+              dealName: deal.itemName,
+              storeName: deal.storeName,
+              storeAvatar: deal.storeAvatar,
+              storeAddress: deal.storeAddress,
+              image: deal.image,
+              pricePaid: Number(totalAmount),
+              originalPrice: Number(deal.originalPrice || 0),
+              discountedPrice: Number(deal.discountedPrice || 0),
+              quantity: 1,
+              pickupBefore: deal.storeClosingTime || deal.expiresAt || "Tonight",
+            }),
+          })
+        }
+      }
+    } catch {
+      // ignore order-create failure, still continue UX
+    }
+
     setDealClaimed(dealId)
     router.push(
       `/payments/success?dealId=${encodeURIComponent(dealId)}&amount=${totalAmount}&status=success`
@@ -94,7 +128,7 @@ function PaymentsPageContent() {
       }
 
       setStatus("success")
-      finishSuccess()
+      await finishSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment confirmation failed")
     } finally {

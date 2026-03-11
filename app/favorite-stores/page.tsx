@@ -2,40 +2,31 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { stores } from "@/lib/data"
+import { type ApiStore } from "@/lib/data"
 import { useStudent } from "@/lib/student-context"
 import { getFavorites, removeFavorite } from "@/lib/favorites"
 import { AppLogo } from "@/components/app-logo"
 
 export default function FavoriteStoresPage() {
   const [favIds, setFavIds] = useState<string[]>([])
-  const [uploadedStoreMap, setUploadedStoreMap] = useState<Record<string, any>>({})
+  const [storeMap, setStoreMap] = useState<Record<string, ApiStore>>({})
   const { user } = useStudent()
 
   useEffect(() => {
     ;(async () => {
       try {
-        const res = await fetch("/api/deals")
+        const res = await fetch("/api/stores")
         if (!res.ok) return
         const data = await res.json()
-        const map: Record<string, any> = {}
-        if (Array.isArray(data.deals)) {
-          for (const d of data.deals) {
-            const key = `store-${String(d.ownerEmail || "unknown")}`
-            if (!map[key]) {
-              map[key] = {
-                id: key,
-                name: String(d.storeName || d.ownerName || "Store Owner"),
-                avatar: String(d.storeAvatar || "/images/store-1.jpg"),
-                address: "Uploaded by store owner",
-                rating: 4.7,
-              }
-            }
+        const map: Record<string, ApiStore> = {}
+        if (Array.isArray(data.stores)) {
+          for (const store of data.stores as ApiStore[]) {
+            map[store.id] = store
           }
         }
-        setUploadedStoreMap(map)
+        setStoreMap(map)
       } catch {
-        setUploadedStoreMap({})
+        setStoreMap({})
       }
     })()
   }, [])
@@ -74,9 +65,18 @@ export default function FavoriteStoresPage() {
     } catch {}
   }
 
-  const staticMap = Object.fromEntries(stores.map((s) => [s.id, s]))
-  const allMap = { ...uploadedStoreMap, ...staticMap }
-  const favStores = favIds.map((id) => allMap[id]).filter(Boolean)
+  const favStores = favIds
+    .map((id) => {
+      if (storeMap[id]) return storeMap[id]
+      const legacy = id.replace(/^store-/, "")
+      if (storeMap[legacy]) return storeMap[legacy]
+      if (legacy.includes("@")) {
+        const localPart = legacy.split("@")[0]
+        if (storeMap[localPart]) return storeMap[localPart]
+      }
+      return null
+    })
+    .filter(Boolean)
 
   return (
     <main className="w-full px-4 py-8">

@@ -21,6 +21,7 @@ export function HomeContent() {
   const { isVerified } = useStudent()
   const [deals, setDeals] = useState<DealPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [mealsSaved, setMealsSaved] = useState(0)
 
   useEffect(() => {
     async function fetchDeals() {
@@ -37,6 +38,17 @@ export function HomeContent() {
       }
     }
     fetchDeals()
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data) => {
+        setMealsSaved(Number(data?.stats?.mealsSaved || 0))
+      })
+      .catch(() => {
+        setMealsSaved(0)
+      })
   }, [])
 
   const filtered =
@@ -99,7 +111,7 @@ export function HomeContent() {
         <Link href="/profile" className="mx-4 mt-1 mb-2 flex items-center gap-2.5 rounded-xl bg-primary/10 px-4 py-2.5 transition-colors hover:bg-primary/15">
           <Leaf className="h-4 w-4 shrink-0 text-primary" />
           <p className="text-xs leading-relaxed text-secondary-foreground">
-            <span className="font-semibold text-primary">156 meals</span> saved from waste today in your area
+            <span className="font-semibold text-primary">{mealsSaved} meals</span> saved from waste today in your area
           </p>
         </Link>
       )}

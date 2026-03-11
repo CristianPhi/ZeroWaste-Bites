@@ -63,7 +63,14 @@ export async function GET(req: Request) {
         return NextResponse.json({ ok: true, deal: doc })
       }
 
-      const query: Record<string, unknown> = ownerEmail ? { ownerEmail } : { status: "active" }
+      const query: Record<string, unknown> = ownerEmail
+        ? {
+            $or: [
+              { ownerEmail },
+              { ownerEmail: { $regex: `^${ownerEmail}$`, $options: "i" } },
+            ],
+          }
+        : { status: "active" }
       const docs = await col.find(query).sort({ createdAt: -1 }).toArray()
       return NextResponse.json({ ok: true, deals: docs })
     }
@@ -149,24 +156,27 @@ export async function POST(req: Request) {
       client = mongo.client
       await mongo.db.collection("store_uploads").insertOne(deal)
 
-      // Keep store_owners profile in sync with the latest store info
-      if (ownerUsername) {
-        await mongo.db.collection("store_owners").updateOne(
-          { email: ownerEmail },
-          {
-            $set: {
-              storeName,
-              storeAvatar,
-              storeAddress,
-              storeClosingTime,
-              storeRating,
-              storeVerified,
-              updatedAt: new Date(),
-            },
+      await mongo.db.collection("store_owners").updateOne(
+        { email: ownerEmail },
+        {
+          $set: {
+            storeName,
+            storeAvatar,
+            storeAddress,
+            storeClosingTime,
+            storeRating,
+            storeVerified,
+            updatedAt: new Date(),
           },
-          { upsert: false }
-        )
-      }
+          $setOnInsert: {
+            email: ownerEmail,
+            username: ownerUsername,
+            ownerName,
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true }
+      )
 
       return NextResponse.json({ ok: true, deal })
     }

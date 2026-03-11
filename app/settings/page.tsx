@@ -81,6 +81,7 @@ export default function SettingsPage() {
           email: String(data.user.email || user.email),
           username: String(data.user.username || username || ""),
           role: data.user.role || user.role,
+          avatar: String(data.user.avatar || user.avatar || ""),
         }
         setUser(nextUser)
       }
