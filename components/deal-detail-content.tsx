@@ -17,6 +17,7 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
   const [loading, setLoading] = useState(true)
   const [claimed, setClaimed] = useState(false)
   const [liked, setLiked] = useState(false)
+  const [favoriteStore, setFavoriteStore] = useState(false)
   const { isVerified, user } = useStudent()
 
   const router = useRouter()
@@ -55,6 +56,27 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
     })()
   }, [dealId, user?.email])
 
+  useEffect(() => {
+    ;(async () => {
+      try {
+        if (!post?.store?.id) {
+          setFavoriteStore(false)
+          return
+        }
+
+        if (user?.email) {
+          const fav = await getFavorites(user.email)
+          setFavoriteStore((fav.favoriteStores || []).includes(post.store.id))
+          return
+        }
+
+        setFavoriteStore(localStorage.getItem(`favorite:${post.store.id}`) === "true")
+      } catch {
+        setFavoriteStore(false)
+      }
+    })()
+  }, [post?.store?.id, user?.email])
+
   const toggleLike = async () => {
     try {
       if (user?.email) {
@@ -73,6 +95,28 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
       setLiked(!liked)
     } catch {
       setLiked(!liked)
+    }
+  }
+
+  const toggleFavoriteStore = async () => {
+    if (!post?.store?.id) return
+    try {
+      if (user?.email) {
+        if (!favoriteStore) {
+          await addFavorite(user.email, "store", post.store.id)
+          setFavoriteStore(true)
+        } else {
+          await removeFavorite(user.email, "store", post.store.id)
+          setFavoriteStore(false)
+        }
+        return
+      }
+
+      if (!favoriteStore) localStorage.setItem(`favorite:${post.store.id}`, "true")
+      else localStorage.removeItem(`favorite:${post.store.id}`)
+      setFavoriteStore(!favoriteStore)
+    } catch {
+      setFavoriteStore(!favoriteStore)
     }
   }
 
@@ -279,6 +323,14 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
           >
             Visit
           </Link>
+          <button
+            onClick={toggleFavoriteStore}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-secondary/80"
+            aria-label={favoriteStore ? "Remove store from favorites" : "Add store to favorites"}
+            title={favoriteStore ? "Unfavorite store" : "Favorite store"}
+          >
+            <Star className={`h-4 w-4 ${favoriteStore ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+          </button>
         </div>
 
         {/* Address */}

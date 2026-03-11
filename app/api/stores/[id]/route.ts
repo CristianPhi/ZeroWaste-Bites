@@ -54,7 +54,7 @@ export async function GET(
 ) {
   let client
   try {
-    const storeId = String(params?.id || "").trim().toLowerCase()
+    const storeId = decodeURIComponent(String(params?.id || "")).trim().toLowerCase()
     if (!storeId) {
       return NextResponse.json({ error: "Store id required" }, { status: 400 })
     }
@@ -67,14 +67,29 @@ export async function GET(
 
       // Read then normalize-match to support legacy and slug IDs consistently.
       const owners = await db.collection("store_owners").find({}).toArray()
-      const owner = owners.find((o) => matchesStoreId(o, candidateIds))
+      let owner = owners.find((o) => matchesStoreId(o, candidateIds))
 
       const allDealDocs = await db
         .collection("store_uploads")
         .find({})
         .sort({ createdAt: -1 })
         .toArray()
-      const dealDocs = allDealDocs.filter((d) => matchesStoreId(d, candidateIds))
+      let dealDocs = allDealDocs.filter((d) => matchesStoreId(d, candidateIds))
+
+      // Fallback: if URL accidentally carries deal id, resolve store from that deal.
+      if (!owner && dealDocs.length === 0) {
+        const byDealId = allDealDocs.find((d) => String(d?.id || "").trim().toLowerCase() === storeId)
+        if (byDealId) {
+          const fallbackCandidateIds = normalizeRequestedIds(
+            toSlug(String(byDealId?.ownerUsername || "")) ||
+              toSlug(emailLocalPart(String(byDealId?.ownerEmail || ""))) ||
+              toSlug(String(byDealId?.storeName || "")) ||
+              storeId
+          )
+          owner = owners.find((o) => matchesStoreId(o, fallbackCandidateIds))
+          dealDocs = allDealDocs.filter((d) => matchesStoreId(d, fallbackCandidateIds))
+        }
+      }
 
       // Build store profile: prefer store_owners, fallback to first deal
       const firstDeal = dealDocs[0]

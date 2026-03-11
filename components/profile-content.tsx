@@ -74,73 +74,45 @@ export function ProfileContent() {
 
     ;(async () => {
       try {
-        const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email)}`)
+        const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
         const data = await res.json()
         const orders = Array.isArray(data?.orders) ? data.orders : []
         const completed = orders.filter((o: any) => o.status === "Completed" || o.status === "Pickup Ready")
         const legacyDealsById = new Map(dealPosts.map((deal) => [String(deal.id), deal]))
-        const legacyDealsByName = new Map(
-          dealPosts.map((deal) => [`${String(deal.itemName).toLowerCase()}::${String(deal.store.name).toLowerCase()}`, deal])
-        )
 
         const claimed = completed.reduce((acc: number, item: any) => {
           const qty = Math.max(1, Number(item?.quantity || 1))
           return acc + qty
         }, 0)
 
-        const savedByOrder = await Promise.all(
-          completed.map(async (item: any) => {
-            const qty = Math.max(1, Number(item?.quantity || 1))
-            const originalPrice = Number(item?.originalPrice || 0)
-            const discountedPrice = Number(item?.discountedPrice || 0)
-            if (originalPrice > 0 && discountedPrice > 0) {
-              return Math.max(0, originalPrice - discountedPrice) * qty
-            }
+        const saved = Math.max(
+          0,
+          Math.round(
+            completed.reduce((acc: number, item: any) => {
+              const qty = Math.max(1, Number(item?.quantity || 1))
+              const originalPrice = Number(item?.originalPrice || 0)
+              const discountedPrice = Number(item?.discountedPrice || 0)
 
-            const estimatedSaved = Number(item?.estimatedSaved || 0)
-            if (estimatedSaved > 0) {
-              return estimatedSaved
-            }
-
-            const dealId = String(item?.dealId || "").trim()
-            const dealName = String(item?.dealName || "").trim().toLowerCase()
-            const storeName = String(item?.storeName || "").trim().toLowerCase()
-
-            const legacyDealByName = legacyDealsByName.get(`${dealName}::${storeName}`)
-            if (legacyDealByName) {
-              return Math.max(0, Number(legacyDealByName.originalPrice || 0) - Number(legacyDealByName.discountedPrice || 0)) * qty
-            }
-
-            if (!dealId) return Math.max(0, Number(item?.pricePaid || 0))
-
-            try {
-              const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
-              const dealData = await dealRes.json()
-              const deal = dealData?.deal
-              if (!dealRes.ok || !deal) {
-                const legacyDeal = legacyDealsById.get(dealId)
-                if (legacyDeal) {
-                  return Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
-                }
-                return Math.max(0, Number(item?.pricePaid || 0))
+              if (originalPrice > 0 && discountedPrice >= 0) {
+                return acc + Math.max(0, originalPrice - discountedPrice) * qty
               }
-              const dealOriginal = Number(deal?.originalPrice || 0)
-              const dealDiscounted = Number(deal?.discountedPrice || 0)
-              if (dealOriginal > 0 && dealDiscounted > 0) {
-                return Math.max(0, dealOriginal - dealDiscounted) * qty
-              }
-              return Math.max(0, Number(item?.pricePaid || 0))
-            } catch {
+
+              const estimatedSaved = Number(item?.estimatedSaved || 0)
+              if (estimatedSaved > 0) return acc + estimatedSaved
+
+              const dealId = String(item?.dealId || "").trim()
               const legacyDeal = legacyDealsById.get(dealId)
               if (legacyDeal) {
-                return Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
+                return (
+                  acc +
+                  Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
+                )
               }
-              return Math.max(0, Number(item?.pricePaid || 0))
-            }
-          })
-        )
 
-        const saved = Math.max(0, Math.round(savedByOrder.reduce((acc, val) => acc + Number(val || 0), 0)))
+              return acc
+            }, 0)
+          )
+        )
 
         if (!mounted) return
         setClaimedCount(claimed)

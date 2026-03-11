@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Clock, Heart, MapPin, ShieldCheck, Star } from "lucide-react"
+import { ArrowLeft, Clock, MapPin, ShieldCheck, Star } from "lucide-react"
 import { type Store, type DealPost, type ApiDeal, apiDealToDealPost, formatPrice } from "@/lib/data"
 import { DealPostCard } from "@/components/deal-post-card"
 import { AppLogo } from "@/components/app-logo"
@@ -140,7 +140,7 @@ export function StoreDetailContent({ storeId }: { storeId: string }) {
             className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-border/50"
             aria-label={isFavorite ? "Remove store from favorites" : "Add store to favorites"}
           >
-            <Heart className={`h-4 w-4 ${isFavorite ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+            <Star className={`h-4 w-4 ${isFavorite ? "fill-primary text-primary" : "text-muted-foreground"}`} />
           </button>
         </div>
 

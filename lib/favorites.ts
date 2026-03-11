@@ -1,7 +1,7 @@
 export async function getFavorites(email: string) {
   const normalizedEmail = email.trim().toLowerCase()
   try {
-    const res = await fetch(`/api/favorites?email=${encodeURIComponent(normalizedEmail)}`)
+    const res = await fetch(`/api/favorites?email=${encodeURIComponent(normalizedEmail)}`, { cache: "no-store" })
     if (!res.ok) return { savedDeals: [], favoriteStores: [] }
     const data = await res.json()
     return data.favorites || { savedDeals: [], favoriteStores: [] }
