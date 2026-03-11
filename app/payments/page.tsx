@@ -26,6 +26,25 @@ function PaymentsPageContent() {
   const [error, setError] = useState<string>("")
   const [paidAmountInput, setPaidAmountInput] = useState<string>("")
 
+  const resolveUserEmail = () => {
+    if (user?.email) return user.email
+    try {
+      const rawLocal = localStorage.getItem("user")
+      if (rawLocal) {
+        const parsed = JSON.parse(rawLocal)
+        if (parsed?.email) return String(parsed.email)
+      }
+      const rawSession = sessionStorage.getItem("user")
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession)
+        if (parsed?.email) return String(parsed.email)
+      }
+    } catch {
+      // ignore
+    }
+    return ""
+  }
+
   const totalAmount = useMemo(() => amount + uniqueCode, [amount, uniqueCode])
 
   useEffect(() => {
@@ -66,35 +85,35 @@ function PaymentsPageContent() {
   const finishSuccess = async () => {
     if (!dealId) return
 
-    try {
-      if (user?.email) {
-        const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
-        const dealData = await dealRes.json()
-        const deal = dealData?.deal
+    const userEmail = resolveUserEmail()
+    if (!userEmail) throw new Error("Sesi login tidak ditemukan. Silakan login ulang.")
 
-        if (dealRes.ok && deal) {
-          await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userEmail: user.email,
-              dealId: deal.id,
-              dealName: deal.itemName,
-              storeName: deal.storeName,
-              storeAvatar: deal.storeAvatar,
-              storeAddress: deal.storeAddress,
-              image: deal.image,
-              pricePaid: Number(totalAmount),
-              originalPrice: Number(deal.originalPrice || 0),
-              discountedPrice: Number(deal.discountedPrice || 0),
-              quantity: 1,
-              pickupBefore: deal.storeClosingTime || deal.expiresAt || "Tonight",
-            }),
-          })
-        }
-      }
-    } catch {
-      // ignore order-create failure, still continue UX
+    const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
+    const dealData = await dealRes.json()
+    const deal = dealData?.deal
+    if (!dealRes.ok || !deal) throw new Error(dealData?.error || "Deal tidak ditemukan")
+
+    const orderRes = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userEmail,
+        dealId: deal.id,
+        dealName: deal.itemName,
+        storeName: deal.storeName,
+        storeAvatar: deal.storeAvatar,
+        storeAddress: deal.storeAddress,
+        image: deal.image,
+        pricePaid: Number(totalAmount),
+        originalPrice: Number(deal.originalPrice || 0),
+        discountedPrice: Number(deal.discountedPrice || 0),
+        quantity: 1,
+        pickupBefore: deal.storeClosingTime || deal.expiresAt || "Tonight",
+      }),
+    })
+    const orderData = await orderRes.json()
+    if (!orderRes.ok) {
+      throw new Error(orderData?.error || "Gagal claim deal")
     }
 
     setDealClaimed(dealId)

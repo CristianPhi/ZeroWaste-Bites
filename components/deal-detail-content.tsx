@@ -60,6 +60,14 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
     ((post.originalPrice - studentPrice) / post.originalPrice) * 100
   )
   const finalPrice = isVerified ? studentPrice : post.discountedPrice
+  const leftQuantity = Math.max(0, Number(post.quantity || 0) - Number(post.claimed || 0))
+
+  const openDirections = () => {
+    const query = String(post.store.address || post.store.name || "").trim()
+    if (!query) return
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    window.open(mapsUrl, "_blank", "noopener,noreferrer")
+  }
 
   return (
     <div className="flex flex-col pb-28">
@@ -179,7 +187,7 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
             </span>
           </div>
           <div className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2">
-            <span className="text-xs font-semibold text-primary">{post.quantity} left</span>
+            <span className="text-xs font-semibold text-primary">{leftQuantity} left</span>
           </div>
           <div className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2">
             <span className="text-xs text-secondary-foreground">{post.claimed} claimed</span>
@@ -245,6 +253,7 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-md items-center gap-3 px-4 py-3">
           <button
+            onClick={openDirections}
             className="flex flex-1 items-center justify-center rounded-xl bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
             aria-label="Get directions to store"
           >
@@ -257,6 +266,11 @@ export function DealDetailContent({ dealId }: { dealId: string }) {
               <span className="text-[10px] text-muted-foreground">
                 Pick up before {post.store.closingTime}
               </span>
+            </div>
+          ) : leftQuantity <= 0 ? (
+            <div className="flex flex-1 flex-col items-center rounded-xl bg-secondary px-4 py-2.5">
+              <span className="text-sm font-semibold text-muted-foreground">Sold out</span>
+              <span className="text-[10px] text-muted-foreground">No items left</span>
             </div>
           ) : (
             <button

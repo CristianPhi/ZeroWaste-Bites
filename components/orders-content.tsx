@@ -30,6 +30,13 @@ export function OrdersContent() {
   const active = orders.filter((d) => d.status === "Pickup Ready")
   const past = orders.filter((d) => d.status === "Completed" || d.status === "Cancelled")
 
+  const openDirections = (address?: string, storeName?: string) => {
+    const query = String(address || storeName || "").trim()
+    if (!query) return
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    window.open(mapsUrl, "_blank", "noopener,noreferrer")
+  }
+
   return (
     <div className="flex flex-col gap-5 pb-4">
       <header>
@@ -90,7 +97,10 @@ export function OrdersContent() {
                     <p className="text-[11px] text-secondary-foreground">{deal.storeAddress}</p>
                   </div>
                 )}
-                <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+                <button
+                  onClick={() => openDirections(deal.storeAddress, deal.storeName)}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
                   <Navigation className="h-4 w-4" />
                   Get Directions
                 </button>

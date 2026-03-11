@@ -536,7 +536,9 @@ export function AdminDashboard() {
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {posts.map((post) => (
+          {posts.map((post) => {
+            const leftQuantity = Math.max(0, Number(post.quantity || 0) - Number(post.claimed || 0))
+            return (
             <div
               key={post.id}
               className={`rounded-xl bg-card p-3 shadow-sm ring-1 transition-all ${
@@ -560,7 +562,7 @@ export function AdminDashboard() {
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Eye className="h-3 w-3" />
-                        {post.quantity} left
+                        {leftQuantity} left
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
@@ -575,7 +577,8 @@ export function AdminDashboard() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

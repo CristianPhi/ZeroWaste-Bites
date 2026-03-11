@@ -6,6 +6,28 @@ export const dynamic = "force-dynamic"
 
 const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1"
 
+function toSlug(value: string) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
+function emailLocalPart(value: string) {
+  const email = String(value || "").trim().toLowerCase()
+  const at = email.indexOf("@")
+  if (at <= 0) return ""
+  return email.slice(0, at)
+}
+
+function resolveStoreId(ownerUsername: string, ownerEmail: string) {
+  const fromUsername = toSlug(ownerUsername)
+  if (fromUsername) return fromUsername
+  return toSlug(emailLocalPart(ownerEmail)) || "unknown"
+}
+
 export async function GET() {
   let client
   try {
@@ -42,7 +64,7 @@ export async function GET() {
 
       // Seed from store_owners
       for (const owner of owners) {
-        const id = String(owner.username || owner.email.split("@")[0]).toLowerCase()
+        const id = resolveStoreId(String(owner.username || ""), String(owner.email || ""))
         storeMap.set(id, {
           id,
           name: String(owner.storeName || owner.ownerName || "Store"),
@@ -57,7 +79,7 @@ export async function GET() {
 
       // Count deals and fill in missing stores from uploads
       for (const deal of uploads) {
-        const id = String(deal.ownerUsername || deal.ownerEmail.split("@")[0]).toLowerCase()
+        const id = resolveStoreId(String(deal.ownerUsername || ""), String(deal.ownerEmail || ""))
         if (storeMap.has(id)) {
           storeMap.get(id)!.dealCount += 1
         } else {
@@ -88,7 +110,7 @@ export async function GET() {
 
     for (const deal of deals) {
       if (deal.status !== "active") continue
-      const id = String(deal.ownerUsername || deal.ownerEmail?.split("@")[0] || "unknown").toLowerCase()
+      const id = resolveStoreId(String(deal.ownerUsername || ""), String(deal.ownerEmail || ""))
       if (storeMap.has(id)) {
         storeMap.get(id).dealCount += 1
       } else {

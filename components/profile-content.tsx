@@ -56,39 +56,71 @@ export function ProfileContent() {
       return
     }
 
-    fetch(`/api/orders?email=${encodeURIComponent(user.email)}`)
-      .then((r) => r.json())
-      .then((data) => {
+    let mounted = true
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email)}`)
+        const data = await res.json()
         const orders = Array.isArray(data?.orders) ? data.orders : []
         const completed = orders.filter((o: any) => o.status === "Completed" || o.status === "Pickup Ready")
+
         const claimed = completed.reduce((acc: number, item: any) => {
           const qty = Math.max(1, Number(item?.quantity || 1))
           return acc + qty
         }, 0)
 
-        const saved = completed.reduce((acc: number, item: any) => {
-          const qty = Math.max(1, Number(item?.quantity || 1))
-          const originalPrice = Number(item?.originalPrice || 0)
-          const discountedPrice = Number(item?.discountedPrice || 0)
+        const savedByOrder = await Promise.all(
+          completed.map(async (item: any) => {
+            const qty = Math.max(1, Number(item?.quantity || 1))
+            const originalPrice = Number(item?.originalPrice || 0)
+            const discountedPrice = Number(item?.discountedPrice || 0)
+            if (originalPrice > 0 && discountedPrice > 0) {
+              return Math.max(0, originalPrice - discountedPrice) * qty
+            }
 
-          // Keep backward compatibility with old orders that only stored pricePaid.
-          const perMealSaved =
-            originalPrice > 0 && discountedPrice > 0
-              ? Math.max(0, originalPrice - discountedPrice)
-              : Math.max(0, Number(item?.estimatedSaved || 0))
+            const estimatedSaved = Number(item?.estimatedSaved || 0)
+            if (estimatedSaved > 0) {
+              return estimatedSaved
+            }
 
-          return acc + perMealSaved * qty
-        }, 0)
+            const dealId = String(item?.dealId || "").trim()
+            if (!dealId) return 0
 
+            try {
+              const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
+              const dealData = await dealRes.json()
+              const deal = dealData?.deal
+              if (!dealRes.ok || !deal) return 0
+              const dealOriginal = Number(deal?.originalPrice || 0)
+              const dealDiscounted = Number(deal?.discountedPrice || 0)
+              if (dealOriginal > 0 && dealDiscounted > 0) {
+                return Math.max(0, dealOriginal - dealDiscounted) * qty
+              }
+              return 0
+            } catch {
+              return 0
+            }
+          })
+        )
+
+        const saved = Math.max(0, Math.round(savedByOrder.reduce((acc, val) => acc + Number(val || 0), 0)))
+
+        if (!mounted) return
         setClaimedCount(claimed)
         setMoneySaved(saved)
         setFoodRescuedKg(Number((claimed * 0.5).toFixed(1)))
-      })
-      .catch(() => {
+      } catch {
+        if (!mounted) return
         setClaimedCount(0)
         setMoneySaved(0)
         setFoodRescuedKg(0)
-      })
+      }
+    })()
+
+    return () => {
+      mounted = false
+    }
   }, [user?.email])
 
   const handleVerify = () => {

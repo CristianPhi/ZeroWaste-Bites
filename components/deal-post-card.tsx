@@ -18,6 +18,7 @@ export function DealPostCard({ post }: { post: DealPost }) {
   const totalStudentDiscount = Math.round(
     ((post.originalPrice - studentPrice) / post.originalPrice) * 100
   )
+  const leftQuantity = Math.max(0, Number(post.quantity || 0) - Number(post.claimed || 0))
 
   const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Preserve default browser behavior for new tab/window interactions.
@@ -119,7 +120,7 @@ export function DealPostCard({ post }: { post: DealPost }) {
         {/* Qty + distance */}
         <div className="absolute right-2 top-2 flex flex-col gap-1">
           <div className="rounded-full bg-card/90 px-2 py-0.5 text-center backdrop-blur-sm">
-            <span className="text-[10px] font-semibold text-foreground">{post.quantity} left</span>
+            <span className="text-[10px] font-semibold text-foreground">{leftQuantity} left</span>
           </div>
         </div>
         {/* Like button */}

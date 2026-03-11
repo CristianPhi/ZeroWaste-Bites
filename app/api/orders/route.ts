@@ -23,6 +23,16 @@ type OrderRecord = {
   claimedAt: string
 }
 
+type DealRecord = {
+  id: string
+  ownerEmail?: string
+  ownerUsername?: string
+  ownerName?: string
+  quantity?: number
+  claimed?: number
+  status?: "active" | "inactive"
+}
+
 const FILE_NAME = "orders.json"
 const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1"
 
@@ -124,10 +134,27 @@ export async function POST(req: Request) {
       client = mongo.client
       const db = mongo.db
 
-      // Increment claimed count on the deal
+      const dealDoc = await db.collection("store_uploads").findOne({ id: dealId })
+      if (!dealDoc) {
+        return NextResponse.json({ error: "Deal not found" }, { status: 404 })
+      }
+
+      const totalQty = Math.max(0, Number(dealDoc.quantity || 0))
+      const claimedQty = Math.max(0, Number(dealDoc.claimed || 0))
+      const availableQty = Math.max(0, totalQty - claimedQty)
+
+      if (availableQty < quantity) {
+        return NextResponse.json({ error: "Item sudah habis" }, { status: 409 })
+      }
+
+      const nextClaimed = claimedQty + quantity
+      const nextStatus = nextClaimed >= totalQty ? "inactive" : String(dealDoc.status || "active")
+
       await db.collection("store_uploads").updateOne(
         { id: dealId },
-        { $inc: { claimed: 1 } }
+        {
+          $set: { claimed: nextClaimed, status: nextStatus },
+        }
       )
 
       await db.collection("orders").insertOne(order)
@@ -135,7 +162,7 @@ export async function POST(req: Request) {
       await db.collection("app_stats").updateOne(
         { key: "global" },
         {
-          $inc: { mealsSaved: 1 },
+          $inc: { mealsSaved: quantity },
           $setOnInsert: { key: "global", createdAt: new Date() },
           $set: { updatedAt: new Date() },
         },
@@ -144,7 +171,7 @@ export async function POST(req: Request) {
 
       await db.collection("users").updateOne(
         { email: userEmail },
-        { $inc: { mealsSaved: 1 } }
+        { $inc: { mealsSaved: quantity } }
       )
 
       const deal = await db.collection("store_uploads").findOne({ id: dealId })
@@ -152,7 +179,7 @@ export async function POST(req: Request) {
         await db.collection("store_owners").updateOne(
           { email: String(deal.ownerEmail).toLowerCase() },
           {
-            $inc: { mealsSaved: 1 },
+            $inc: { mealsSaved: quantity },
             $setOnInsert: {
               email: String(deal.ownerEmail).toLowerCase(),
               username: deal.ownerUsername,
@@ -171,12 +198,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Orders storage belum dikonfigurasi" }, { status: 503 })
     }
 
+    const deals = await readJsonFile<DealRecord[]>("deals.json", [])
+    const dealIdx = deals.findIndex((d) => d.id === dealId)
+    if (dealIdx < 0) {
+      return NextResponse.json({ error: "Deal not found" }, { status: 404 })
+    }
+
+    const currentDeal = deals[dealIdx]
+    const totalQty = Math.max(0, Number(currentDeal.quantity || 0))
+    const claimedQty = Math.max(0, Number(currentDeal.claimed || 0))
+    const availableQty = Math.max(0, totalQty - claimedQty)
+
+    if (availableQty < quantity) {
+      return NextResponse.json({ error: "Item sudah habis" }, { status: 409 })
+    }
+
+    const nextClaimed = claimedQty + quantity
+    deals[dealIdx] = {
+      ...currentDeal,
+      claimed: nextClaimed,
+      status: nextClaimed >= totalQty ? "inactive" : (currentDeal.status || "active"),
+    }
+    await writeJsonFile("deals.json", deals)
+
     const orders = await readOrdersFile()
     orders.unshift(order)
     await writeOrdersFile(orders)
 
     const stats = await readJsonFile<{ mealsSaved?: number }>("stats.json", { mealsSaved: 0 })
-    await writeJsonFile("stats.json", { mealsSaved: Number(stats.mealsSaved || 0) + 1 })
+    await writeJsonFile("stats.json", { mealsSaved: Number(stats.mealsSaved || 0) + quantity })
 
     return NextResponse.json({ ok: true, order })
   } catch (err: any) {
