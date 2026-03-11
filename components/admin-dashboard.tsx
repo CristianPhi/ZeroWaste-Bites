@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react"
 import { formatPrice } from "@/lib/data"
 import { AppLogo } from "@/components/app-logo"
 import { useStudent } from "@/lib/student-context"
+import { AvatarCropModal } from "@/components/avatar-crop-modal"
 
 interface PostItem {
   id: string
@@ -50,6 +51,7 @@ export function AdminDashboard() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [photoUploadError, setPhotoUploadError] = useState("")
   const [avatarUploadError, setAvatarUploadError] = useState("")
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null)
 
   const foodPhotoInputRef = useRef<HTMLInputElement | null>(null)
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
@@ -317,10 +319,10 @@ export function AdminDashboard() {
               type="file"
               accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
               className="hidden"
-              onChange={async (e) => {
+              onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (!file) return
-                await handleAvatarSelect(file)
+                setAvatarCropFile(file)
                 e.currentTarget.value = ""
               }}
             />
@@ -581,6 +583,18 @@ export function AdminDashboard() {
           })}
         </div>
       </div>
+
+      {avatarCropFile ? (
+        <AvatarCropModal
+          file={avatarCropFile}
+          open={Boolean(avatarCropFile)}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={async (croppedFile) => {
+            await handleAvatarSelect(croppedFile)
+            setAvatarCropFile(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

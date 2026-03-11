@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { AppLogo } from "@/components/app-logo"
 import { useStudent } from "@/lib/student-context"
+import { AvatarCropModal } from "@/components/avatar-crop-modal"
 
 export function AdminProfileContent() {
   const { user, setUser, setVerified } = useStudent()
@@ -19,6 +20,7 @@ export function AdminProfileContent() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [avatarUploadError, setAvatarUploadError] = useState("")
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -158,10 +160,10 @@ export function AdminProfileContent() {
             type="file"
             accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
             className="hidden"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0]
               if (!file) return
-              await handleAvatarUpload(file)
+              setAvatarCropFile(file)
               e.currentTarget.value = ""
             }}
           />
@@ -270,6 +272,18 @@ export function AdminProfileContent() {
         <LogOut className="h-4 w-4" />
         Sign Out
       </button>
+
+      {avatarCropFile ? (
+        <AvatarCropModal
+          file={avatarCropFile}
+          open={Boolean(avatarCropFile)}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={async (croppedFile) => {
+            await handleAvatarUpload(croppedFile)
+            setAvatarCropFile(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

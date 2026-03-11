@@ -17,9 +17,11 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import { useStudent } from "@/lib/student-context"
+import { dealPosts } from "@/lib/data"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppLogo } from "@/components/app-logo"
+import { AvatarCropModal } from "@/components/avatar-crop-modal"
 
 const menuItems = [
   { icon: Heart, label: "Saved Deals", description: "Deals you liked", href: "/saved-deals" },
@@ -34,6 +36,7 @@ export function ProfileContent() {
   const [uploading, setUploading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarUploadError, setAvatarUploadError] = useState("")
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null)
 
   const router = useRouter()
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
@@ -85,7 +88,7 @@ export function ProfileContent() {
             }
 
             const dealId = String(item?.dealId || "").trim()
-            if (!dealId) return 0
+            if (!dealId) return Math.max(0, Number(item?.pricePaid || 0))
 
             try {
               const dealRes = await fetch(`/api/deals?id=${encodeURIComponent(dealId)}`)
@@ -99,7 +102,11 @@ export function ProfileContent() {
               }
               return 0
             } catch {
-              return 0
+              const legacyDeal = dealPosts.find((d) => String(d.id) === dealId)
+              if (legacyDeal) {
+                return Math.max(0, Number(legacyDeal.originalPrice || 0) - Number(legacyDeal.discountedPrice || 0)) * qty
+              }
+              return Math.max(0, Number(item?.pricePaid || 0))
             }
           })
         )
@@ -211,10 +218,10 @@ export function ProfileContent() {
             type="file"
             accept="image/png,image/jpeg,image/jpg,image/webp,image/avif,.jfif"
             className="hidden"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0]
               if (!file) return
-              await handleAvatarUpload(file)
+              setAvatarCropFile(file)
               e.currentTarget.value = ""
             }}
           />
@@ -406,6 +413,18 @@ export function ProfileContent() {
           </div>
         </div>
       )}
+
+      {avatarCropFile ? (
+        <AvatarCropModal
+          file={avatarCropFile}
+          open={Boolean(avatarCropFile)}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={async (croppedFile) => {
+            await handleAvatarUpload(croppedFile)
+            setAvatarCropFile(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
