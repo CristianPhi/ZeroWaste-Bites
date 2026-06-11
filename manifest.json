@@ -1,0 +1,74 @@
+{
+  "short_name": "ZW Bites",
+  "name": "ZeroWaste Bites",
+  "description": "Selamatkan makanan lezat dari pembuangan. Lindungi bumi dengan mengurangi sampah makanan bersama ZeroWaste Bites.",
+  "icons": [
+    {
+      "src": "apk_logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "apk_logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "apk_logo-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/?utm_source=pwa",
+  "background_color": "#F9FAFB",
+  "theme_color": "#10B981",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": [
+    "food",
+    "lifestyle",
+    "social"
+  ],
+  "shortcuts": [
+    {
+      "name": "Cari Makanan",
+      "short_name": "Cari",
+      "description": "Temukan makanan penyelamatan di sekitar Anda",
+      "url": "/?action=explore",
+      "icons": [{ "src": "apk_logo-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Donasi Makanan",
+      "short_name": "Donasi",
+      "description": "Bagikan makanan berlebih Anda",
+      "url": "/donate",
+      "icons": [{ "src": "apk_logo-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+```
+eof
+
+### Langkah-langkah Penggunaan untuk Website Anda:
+
+Agar file manifest di atas berfungsi dengan sempurna di HP pengguna, silakan ikuti panduan berikut:
+
+1. **Simpan File Manifest:** Simpan kode di atas dengan nama `manifest.json` di dalam folder root website Anda (biasanya di folder `public` jika menggunakan framework modern seperti Next.js/React, atau langsung di folder utama jika menggunakan HTML biasa).
+
+2. **Hubungkan di Bagian `<head>` Website:**
+   Buka file HTML utama Anda (misalnya `index.html`) dan tambahkan tag berikut di dalam elemen `<head>` agar browser mendeteksi manifest tersebut:
+   ```html
+   <!-- Menghubungkan manifest.json -->
+   <link rel="manifest" href="/manifest.json">
+
+   <!-- Mengatur warna status bar di HP (iOS/Android) -->
+   <meta name="theme-color" content="#10B981">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+   <meta name="apple-mobile-web-app-title" content="ZeroWaste Bites">
+   
+   <!-- Ikon untuk iOS/Safari -->
+   <link rel="apple-touch-icon" href="/apk_logo-192.png">
